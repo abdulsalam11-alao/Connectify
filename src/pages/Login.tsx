@@ -6,24 +6,33 @@ import GoogleIcon from "@mui/icons-material/Google";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SocialButton from "../ui/SocialButton"; // Import the reusable SocialButton component
-
 import { useNavigate } from "react-router-dom";
-
-type Props = {};
 
 const StyledForm = styled.form`
   display: flex;
-  justify-content: center;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background-color: var(--background-light);
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 `;
 
 const StyledSection = styled.section`
   padding: 20px;
+  width: 100%;
 `;
 
 const StyledH1 = styled.h1`
-  font-size: 40px;
+  font-size: 32px;
   font-weight: bold;
+  color: var(--primary-color);
+  margin-bottom: 20px;
+  text-align: center;
 `;
 
 // Styled arrow back icon
@@ -32,11 +41,40 @@ const StyledArrowBackIcon = styled(ArrowBackIcon)`
   position: absolute;
   top: 20px;
   left: 20px;
-  font-size: 100px;
-  color: aliceblue;
+  font-size: 40px;
+  color: var(--primary-color);
+  &:hover {
+    color: var(--primary-color-dark);
+  }
 `;
 
-export default function Login({}: Props) {
+const StyledImg = styled.img`
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 20px;
+`;
+
+const ForgotPasswordText = styled.p`
+  font-size: 14px;
+  color: var(--color-grey);
+  margin: 10px 0;
+  text-align: center;
+
+  a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+
+    &:hover {
+      color: var(--primary-color-dark);
+    }
+  }
+`;
+
+export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
@@ -47,23 +85,23 @@ export default function Login({}: Props) {
   return (
     <StyledForm>
       <StyledArrowBackIcon onClick={() => navigate(-1)} />
+      <StyledImg src="/login.jpeg" alt="login-image" />
 
-      <img src="/login.jpeg" alt="login-Image" />
       <StyledSection>
         <StyledH1>Sign in</StyledH1>
-        <Input label="email" type="email" required />
+        <Input label="Email" type="email" required />
         <Input
-          label="password"
-          type="password"
+          label="Password"
+          type={showPassword ? "text" : "password"}
           showPassword={showPassword}
           togglePasswordVisibility={togglePasswordVisibility}
           required
         />
         <Button>Sign in</Button>
 
-        <p>
+        <ForgotPasswordText>
           Forgot your password? <a href="/forgot-password">Reset it</a>
-        </p>
+        </ForgotPasswordText>
 
         <SocialButton
           backgroundColor="#db4437"

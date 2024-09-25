@@ -1,4 +1,3 @@
-// src/styles/GlobalStyles.ts
 import { createGlobalStyle } from "styled-components";
 
 const GlobalStyles = createGlobalStyle`
@@ -11,14 +10,14 @@ const GlobalStyles = createGlobalStyle`
     --color-yellow: #ffc107; /* Yellow color */
     --color-green: #28a745; /* Green color */
     --color-teal: #20c997; /* Teal color */
-    --color-grey: #6c757d; /* Greyscale color */
+    --color-grey: #6c757d; 
     
-    --background-light: #f4f4f4; /* Light background for light mode */
-    --background-dark: #343a40; /* Dark background for dark mode */
-    --text-light: #ffffff; /* Light text color for dark mode */
-    --text-dark: #333333; /* Dark text color for light mode */
-    --primary-color: var(--color-blue); /* Primary color */
-    --primary-color-dark: #0056b3; /* Darker shade of primary color for hover effects */
+    --background-light: #f8f8f8;
+    --background-dark: #343a40; 
+    --text-light: #ffffff; 
+    --text-dark: #333333; 
+    --primary-color: var(--color-blue);
+    --primary-color-dark: #0056b3; 
   }
 
   * {
@@ -36,7 +35,7 @@ const GlobalStyles = createGlobalStyle`
     overflow-x: hidden; /* Prevent horizontal scrolling */
   }
 
-  /* Add styles for dark mode */
+  /* Dark Mode Styles */
   body.dark-mode {
     background-color: var(--background-dark); /* Dark background */
     color: var(--text-light); /* Light text color */
@@ -45,22 +44,22 @@ const GlobalStyles = createGlobalStyle`
   a {
     text-decoration: none;
     color: inherit; /* Inherit color from parent */
-    transition: color 0.3s; /* Smooth color transition */
-    
+    transition: color 0.3s;
+
     &:hover {
-      color: var(--color-blue); /* Change color on hover */
+      color: var(--color-blue); /* Hover color */
     }
   }
 
   button {
     cursor: pointer;
-    font: inherit; /* Ensure button font matches body font */
-    border: none; /* Remove default border */
-    outline: none; /* Remove outline */
-    transition: background-color 0.3s; /* Smooth background color transition */
-    
+    font: inherit;
+    border: none;
+    outline: none;
+    transition: background-color 0.3s;
+
     &:focus {
-      outline: 2px solid var(--color-blue); /* Accessibility focus outline */
+      outline: 2px solid var(--color-blue);
     }
   }
 `;
