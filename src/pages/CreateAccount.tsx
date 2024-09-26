@@ -13,7 +13,6 @@ const StyledForm = styled.form`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
   background-color: var(--background-light);
   border-radius: 10px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
@@ -35,14 +34,13 @@ const StyledH1 = styled.h1`
   text-align: center;
 `;
 
-// Styled arrow back icon
 const StyledArrowBackIcon = styled(ArrowBackIcon)`
   cursor: pointer;
   position: absolute;
   top: 20px;
-  left: 20px;
-  font-size: 40px;
-  color: var(--primary-color);
+  left: 10px;
+
+  color: var(--text-light);
   &:hover {
     color: var(--primary-color-dark);
   }
@@ -50,8 +48,6 @@ const StyledArrowBackIcon = styled(ArrowBackIcon)`
 
 const StyledImg = styled.img`
   width: 100%;
-  height: auto;
-  max-height: 300px;
   object-fit: cover;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -89,7 +85,11 @@ export default function CreateAccount() {
 
   return (
     <StyledForm>
-      <StyledArrowBackIcon onClick={() => navigate(-1)} />
+      <StyledArrowBackIcon
+        style={{ fontSize: "40px" }}
+        onClick={() => navigate(-1)}
+      />
+
       <StyledImg src="/signUp.jpg" alt="Sign Up Image" />
 
       <StyledSection>
@@ -98,7 +98,7 @@ export default function CreateAccount() {
         <Input label="Email" type="email" required />
         <Input
           label="Password"
-          type={showPassword ? "text" : "password"} // Toggle between "text" and "password"
+          type={showPassword ? "text" : "password"}
           showPassword={showPassword}
           togglePasswordVisibility={togglePasswordVisibility}
           required

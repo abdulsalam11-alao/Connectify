@@ -53,7 +53,7 @@ const MessagesPage: React.FC = () => {
     <Container>
       <Header>
         <Title>Messages</Title>
-        <EditButton to="/edit">
+        <EditButton to="/newMessage">
           <EditIcon />
         </EditButton>
       </Header>

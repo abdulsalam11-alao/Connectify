@@ -2,47 +2,45 @@ import React from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 
-// Container for the entire GetStarted page
 const Container = styled.div`
-  width:100%;
-  padding: 20px;
+  width: 100%;
   background-color: var(--background-light);
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative; /* Relative positioning for child elements */
+  margin: 0; /* Ensure there's no margin */
 `;
 
 // Styled image
 const StyledImage = styled.img`
-  width: 100%; /* Full width of the container */
-  height: auto; /* Maintain aspect ratio */
-  padding: 20px; /* Padding around the image */
+  width: 100%;
+  height: 100%;
 `;
 
 // Title styling
 const Title = styled.h1`
-  font-size: 24px; /* Title font size */
-  color: var(--primary-color); /* Use primary color */
-  margin-bottom: 10px; /* Space below the title */
-  text-align: center; /* Center align text */
+  font-size: 24px;
+  color: var(--primary-color);
+  margin-bottom: 10px;
+  text-align: center;
 `;
 
 // Description styling
 const Description = styled.p`
-  font-size: 16px; /* Description font size */
-  color: var(--text-color); /* Text color */
-  text-align: center; /* Center align text */
-  margin-bottom: 30px; /* Space below the description */
+  font-size: 16px;
+  color: var(--text-color);
+  text-align: center;
+  margin-bottom: 20px;
 `;
 
 // Button styling
 const Button = styled.button`
-  background-color: var(--primary-color); /* Use primary color */
+  background-color: var(--primary-color);
   color: white;
   padding: 12px 24px;
+
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -56,7 +54,7 @@ const Button = styled.button`
 
 // Styled link
 const StyledLink = styled(Link)`
-  margin-top: 20px;
+  margin-top: 10px;
   color: var(--primary-color);
   font-size: 18px;
   text-decoration: none;
@@ -72,7 +70,7 @@ const GetStarted: React.FC = () => {
   return (
     <Container>
       <StyledImage
-        src="./GetStarted.jpeg"
+        src="./GetStartedImage.png"
         alt="Welcome to Connectify - Get Started"
       />
       <Title>Welcome to Connectify</Title>

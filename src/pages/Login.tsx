@@ -13,12 +13,11 @@ const StyledForm = styled.form`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+
   background-color: var(--background-light);
   border-radius: 10px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 400px;
   margin: 0 auto;
 `;
 
@@ -84,8 +83,12 @@ export default function Login() {
 
   return (
     <StyledForm>
-      <StyledArrowBackIcon onClick={() => navigate(-1)} />
-      <StyledImg src="/login.jpeg" alt="login-image" />
+      <StyledArrowBackIcon
+        style={{ fontSize: "40px" }}
+        onClick={() => navigate(-1)}
+      />
+
+      <StyledImg src="/SignIn.png" alt="login-image" />
 
       <StyledSection>
         <StyledH1>Sign in</StyledH1>
@@ -97,7 +100,7 @@ export default function Login() {
           togglePasswordVisibility={togglePasswordVisibility}
           required
         />
-        <Button>Sign in</Button>
+        <Button onClick={() => navigate("/app/chat")}>Sign in</Button>
 
         <ForgotPasswordText>
           Forgot your password? <a href="/forgot-password">Reset it</a>

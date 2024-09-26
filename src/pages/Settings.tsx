@@ -3,6 +3,7 @@ import styled from "styled-components";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import Button from "../ui/Button"; // Import the reusable Button component
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle";
 
 const Container = styled.div`
   width: 100%;
@@ -97,6 +98,7 @@ const SettingsPage: React.FC = () => {
   return (
     <Container>
       <Header>Settings</Header>
+      <ThemeToggle />
       <ProfileSection onClick={() => navigate("/app/editProfile")}>
         <div>
           <Avatar src="https://via.placeholder.com/50" alt="Profile" />
@@ -121,13 +123,15 @@ const SettingsPage: React.FC = () => {
           <span>Settings</span>
           <StyledArrowForwardIcon />
         </MenuItem>
-        <MenuItem>
+        <MenuItem onClick={() => navigate("/support")}>
           <span>Support</span>
           <StyledArrowForwardIcon />
         </MenuItem>
       </MenuSection>
 
-      <Button variant="danger">Sign out</Button>
+      <Button variant="danger" onClick={() => navigate("/Login")}>
+        Sign out
+      </Button>
     </Container>
   );
 };

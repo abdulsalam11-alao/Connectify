@@ -4,7 +4,6 @@ import Avatar from "@mui/material/Avatar";
 import IconButton from "@mui/material/IconButton";
 import PhoneIcon from "@mui/icons-material/Phone";
 import VideoCallIcon from "@mui/icons-material/VideoCall";
-
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import SendIcon from "@mui/icons-material/Send";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +14,7 @@ interface MessageProps {
 
 const Container = styled.div`
   width: 400px;
-  height: 600px;
+  height: 100vh;
   margin: 0 auto;
   padding: 16px;
   background-color: var(--background-light);
@@ -62,7 +61,7 @@ const MessagesContainer = styled.div`
   flex-grow: 1;
   overflow-y: auto;
   padding: 16px;
-  background-color: #f8f8f8;
+  background-color: var(--background-light);
 `;
 
 const Message = styled.div<MessageProps>`
@@ -78,7 +77,7 @@ const MessageBubble = styled.div<MessageProps>`
   padding: 10px;
   border-radius: 16px;
   max-width: 60%;
-  color: #333;
+  color: var(--text-dark);
 `;
 
 const TimeStamp = styled.span<MessageProps>`
@@ -123,7 +122,16 @@ const ChatPage: React.FC = () => {
       isOwnMessage: false,
     },
     { text: "Absolutely. When?", time: "11:00", isOwnMessage: true },
+    { text: "Absolutely. When?", time: "11:00", isOwnMessage: true },
+    { text: "Absolutely. When?", time: "11:00", isOwnMessage: true },
+    { text: "Absolutely. When?", time: "11:00", isOwnMessage: true },
+    { text: "Absolutely. When?", time: "11:00", isOwnMessage: true },
     { text: "Yay!", time: "11:05", isOwnMessage: false },
+    { text: "Yay!", time: "11:05", isOwnMessage: false },
+    { text: "Absolutely. When?", time: "11:00", isOwnMessage: true },
+    { text: "Absolutely. When?", time: "11:00", isOwnMessage: true },
+    { text: "Yay!", time: "11:05", isOwnMessage: false },
+    { text: "Absolutely. When?", time: "11:00", isOwnMessage: true },
   ]);
 
   const [newMessage, setNewMessage] = useState("");
@@ -139,52 +147,56 @@ const ChatPage: React.FC = () => {
   };
 
   return (
-    <Container>
-      <Header>
-        <UserInfo>
-          <ArrowBackIosNewIcon onClick={() => navigate(-1)} />
-          <Avatar alt="Anna" src="https://via.placeholder.com/40" />
-          <UserDetails>
-            <UserName>Anna</UserName>
-            <UserStatus>Online</UserStatus>
-          </UserDetails>
-        </UserInfo>
-        <ActionIcons>
-          <IconButton>
-            <PhoneIcon />
-          </IconButton>
-          <IconButton>
-            <VideoCallIcon />
-          </IconButton>
-        </ActionIcons>
-      </Header>
+    <>
+      <Container>
+        <Header>
+          <UserInfo>
+            <ArrowBackIosNewIcon onClick={() => navigate(-1)} />
+            <Avatar alt="Anna" src="https://via.placeholder.com/40" />
+            <UserDetails>
+              <UserName>Anna</UserName>
+              <UserStatus>Online</UserStatus>
+            </UserDetails>
+          </UserInfo>
+          <ActionIcons>
+            <IconButton>
+              <PhoneIcon />
+            </IconButton>
+            <IconButton>
+              <VideoCallIcon />
+            </IconButton>
+          </ActionIcons>
+        </Header>
 
-      {/* Messages Section */}
-      <MessagesContainer>
-        {messages.map((msg, index) => (
-          <Message key={index} isOwnMessage={msg.isOwnMessage}>
-            <MessageBubble isOwnMessage={msg.isOwnMessage}>
-              {msg.text}
-              <TimeStamp isOwnMessage={msg.isOwnMessage}>{msg.time}</TimeStamp>
-            </MessageBubble>
-          </Message>
-        ))}
-      </MessagesContainer>
+        {/* Messages Section */}
+        <MessagesContainer>
+          {messages.map((msg, index) => (
+            <Message key={index} isOwnMessage={msg.isOwnMessage}>
+              <MessageBubble isOwnMessage={msg.isOwnMessage}>
+                {msg.text}
+                <TimeStamp isOwnMessage={msg.isOwnMessage}>
+                  {msg.time}
+                </TimeStamp>
+              </MessageBubble>
+            </Message>
+          ))}
+        </MessagesContainer>
 
-      {/* Input Section */}
-      <InputContainer>
-        <InputField
-          type="text"
-          placeholder="Type here..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-        />
-        <SendButton onClick={handleSendMessage}>
-          <SendIcon />
-        </SendButton>
-      </InputContainer>
-    </Container>
+        {/* Input Section */}
+        <InputContainer>
+          <InputField
+            type="text"
+            placeholder="Type here..."
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+          />
+          <SendButton onClick={handleSendMessage}>
+            <SendIcon />
+          </SendButton>
+        </InputContainer>
+      </Container>
+    </>
   );
 };
 

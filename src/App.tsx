@@ -8,11 +8,14 @@ import Applayout from "./ui/Applayout";
 import MessagePage from "./pages/MessagePage";
 import Settings from "./pages/Settings";
 import EditProfile from "./components/EditProfile";
+import NewMessage from "./components/NewMessage";
 import ChatPage from "./pages/ChatPage";
+import SupportPage from "./pages/SupportPage";
+import { ThemeProvider } from "./context/ThemeContext";
 
 function App() {
   return (
-    <>
+    <ThemeProvider>
       <BrowserRouter>
         <GlobalStyles />
         <Routes>
@@ -25,10 +28,12 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="editProfile" element={<EditProfile />} />
           </Route>
+          <Route path="newMessage" element={<NewMessage />} />
           <Route path="/chatpage" element={<ChatPage />} />
+          <Route path="/support" element={<SupportPage />} />
         </Routes>
       </BrowserRouter>
-    </>
+    </ThemeProvider>
   );
 }
 
