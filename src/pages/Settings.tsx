@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import Button from "../ui/Button"; // Import the reusable Button component
 import { useNavigate } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase/db";
 
 const Container = styled.div`
   width: 100%;
@@ -95,6 +97,20 @@ const StyledArrowForwardIcon = styled(ArrowForwardIosIcon)`
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  function handleSignOut() {
+    setIsLoading(true);
+    signOut(auth)
+      .then(() => {
+        // Sign-out successful.
+        localStorage.removeItem("userToken");
+        setIsLoading(false);
+        navigate("/Login");
+      })
+      .catch((error) => {
+        // An error happened.
+      });
+  }
   return (
     <Container>
       <Header>Settings</Header>
@@ -129,7 +145,7 @@ const SettingsPage: React.FC = () => {
         </MenuItem>
       </MenuSection>
 
-      <Button variant="danger" onClick={() => navigate("/Login")}>
+      <Button variant="danger" disabled={isLoading} onClick={handleSignOut}>
         Sign out
       </Button>
     </Container>

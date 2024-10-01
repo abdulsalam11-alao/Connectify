@@ -4,17 +4,18 @@ import Visibility from "@mui/icons-material/Visibility"; // Import visibility ic
 import VisibilityOff from "@mui/icons-material/VisibilityOff"; // Import visibility off icon
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string; // Optional label for the input
-  error?: string; // Optional error message
-  showPassword?: boolean; // Variable to indicate if the password should be shown
-  togglePasswordVisibility?: () => void; // Function to toggle password visibility
+  label?: string;
+  error?: string;
+  showPassword?: boolean;
+  togglePasswordVisibility?: () => void;
+  name?: string;
 }
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   margin-bottom: 15px;
-  position: relative; /* Required for positioning the toggle button */
+  position: relative;
 `;
 
 const Label = styled.label`
@@ -62,10 +63,18 @@ const Input: React.FC<InputProps> = ({
 }) => {
   return (
     <Container>
-      {label && <Label>{label}</Label>}
-      <StyledInput {...props} type={showPassword ? "text" : props.type} />
+      {label && <Label htmlFor={props.name}>{label}</Label>}
+      <StyledInput
+        id={props.name}
+        {...props}
+        type={showPassword ? "text" : props.type}
+      />
       {showPassword !== undefined && togglePasswordVisibility && (
-        <ToggleVisibilityButton onClick={togglePasswordVisibility}>
+        <ToggleVisibilityButton
+          type="button"
+          onClick={togglePasswordVisibility}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
           {showPassword ? <VisibilityOff /> : <Visibility />}
         </ToggleVisibilityButton>
       )}

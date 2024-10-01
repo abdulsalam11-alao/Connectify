@@ -5,18 +5,20 @@ import styled from "styled-components";
 const Container = styled.div`
   width: 100%;
   background-color: var(--background-light);
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 0; /* Ensure there's no margin */
+  margin: 0;
+  overflow-x: scroll;
 `;
 
 // Styled image
 const StyledImage = styled.img`
   width: 100%;
-  height: 100%;
+  height: 80%;
+  margin-bottom: 30px;
 `;
 
 // Title styling

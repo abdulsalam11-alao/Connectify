@@ -13,7 +13,7 @@ const StyledButton = styled.button<{ variant: string }>`
   cursor: pointer;
   font-size: 16px;
   width: 100%;
-  transition: background-color 0.3s, box-shadow 0.2s;
+  transition: background-color 0.3s;
   background-color: ${({ variant }) =>
     variant === "primary"
       ? "var(--primary-color)"
@@ -25,7 +25,7 @@ const StyledButton = styled.button<{ variant: string }>`
   color: white;
 
   &:hover {
-    background-color: ${({ variant }) =>
+    color: ${({ variant }) =>
       variant === "primary"
         ? "var(--primary-color-dark)"
         : variant === "secondary"
@@ -33,7 +33,6 @@ const StyledButton = styled.button<{ variant: string }>`
         : variant === "danger"
         ? "var(--color-red-dark)"
         : "var(--primary-color-dark)"};
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   &:focus {
@@ -42,7 +41,15 @@ const StyledButton = styled.button<{ variant: string }>`
   }
 
   &:disabled {
-    background-color: var(--color-grey-light);
+    background-color: ${({ variant }) =>
+      variant === "primary"
+        ? "var(--primary-color)"
+        : variant === "secondary"
+        ? "var(--color-grey)"
+        : variant === "danger"
+        ? "var(--color-red)"
+        : "var(--primary-color)"};
+    color: white;
     cursor: not-allowed;
   }
 `;

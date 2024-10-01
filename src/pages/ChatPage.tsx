@@ -152,7 +152,11 @@ const ChatPage: React.FC = () => {
         <Header>
           <UserInfo>
             <ArrowBackIosNewIcon onClick={() => navigate(-1)} />
-            <Avatar alt="Anna" src="https://via.placeholder.com/40" />
+            <Avatar
+              alt="Anna"
+              src="https://lh3.googleusercontent.com/a/ACg8ocLn2jt8_7doj3-_uHr_MyMFlA-PeFQklZCbkQ6xoHsmWFnB1epn=s96-c"
+              onClick={() => navigate("/profile/1")}
+            />
             <UserDetails>
               <UserName>Anna</UserName>
               <UserStatus>Online</UserStatus>

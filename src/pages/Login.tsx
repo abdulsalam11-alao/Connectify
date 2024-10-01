@@ -1,12 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, ChangeEvent } from "react";
 import styled from "styled-components";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
 import GoogleIcon from "@mui/icons-material/Google";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import SocialButton from "../ui/SocialButton"; // Import the reusable SocialButton component
+import SocialButton from "../ui/SocialButton";
 import { useNavigate } from "react-router-dom";
+// import { validateEmail, validatePassword } from "../util/formValidation";
+import {
+  FacebookAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from "firebase/auth";
+
+import { getFriendlyErrorMessage } from "../ErrorMessage";
+import { auth, provider } from "../firebase/db";
+import { useUser } from "../hook/useUser";
 
 const StyledForm = styled.form`
   display: flex;
@@ -18,7 +28,9 @@ const StyledForm = styled.form`
   border-radius: 10px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
   width: 100%;
+  max-width: 400px;
   margin: 0 auto;
+  padding: 20px;
 `;
 
 const StyledSection = styled.section`
@@ -34,7 +46,6 @@ const StyledH1 = styled.h1`
   text-align: center;
 `;
 
-// Styled arrow back icon
 const StyledArrowBackIcon = styled(ArrowBackIcon)`
   cursor: pointer;
   position: absolute;
@@ -73,34 +84,201 @@ const ForgotPasswordText = styled.p`
   }
 `;
 
+const ErrorText = styled.span`
+  font-size: 12px;
+  color: var(--color-red);
+  margin-top: 5px;
+  text-align: center;
+`;
+
 export default function Login() {
-  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { handleCreateAction } = useUser();
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordValid, setPasswordValid] = useState(true);
+  const [emailValid, setEmailValid] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+
+  // Email Validation
+  const validateEmail = (email: string) => {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    setEmailValid(emailPattern.test(email));
+  };
+
+  // Password Validation
+  const validatePassword = (password: string) => {
+    const passwordPattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+    setPasswordValid(passwordPattern.test(password));
+  };
+
+  // Handle Email Change
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    validateEmail(value);
+  };
+
+  // Handle Password Change
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    validatePassword(value);
+  };
+
+  // Handle Form Submission
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!emailValid || !passwordValid) {
+      setAuthError("Please fix the errors above before submitting.");
+      return;
+    }
+
+    setIsLoading(true);
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        localStorage.setItem("userToken", user.refreshToken);
+
+        const userData = {
+          uid: user.uid,
+          fullName: user.displayName as string,
+          email: user.email,
+          photoUrl: user.photoURL,
+        };
+        handleCreateAction(userData);
+
+        navigate("/app/chat");
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log(errorCode, errorMessage);
+      })
+      .finally(() => setIsLoading(false));
+  };
 
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
   };
+  const GoogleSignIn = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
 
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        provider.setCustomParameters({
+          display: "popup",
+        });
+
+        const user = result.user;
+        localStorage.setItem("userToken", user.refreshToken);
+
+        // Clear any previous errors
+        setAuthError("");
+        const userData = {
+          uid: user.uid,
+          fullName: user.displayName as string,
+          email: user.email,
+          photoUrl: user.photoURL,
+
+          // Add any additional fields here
+        };
+        handleCreateAction(userData);
+
+        navigate("/app/chat");
+      })
+      .catch((error) => {
+        const friendlyMessage = getFriendlyErrorMessage(error.code);
+        console.log(error.message);
+        setAuthError(friendlyMessage);
+      })
+      .finally(() => {});
+  };
+  const faceBookSignIn = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsLoading(true);
+
+    signInWithPopup(auth, new FacebookAuthProvider())
+      .then((result) => {
+        const provider = new FacebookAuthProvider();
+        provider.setCustomParameters({
+          display: "popup",
+        });
+        const user = result.user;
+        localStorage.setItem("userToken", user.refreshToken);
+
+        console.log(user);
+
+        const credential = FacebookAuthProvider?.credentialFromResult(result);
+        const accessToken = credential?.accessToken;
+
+        setAuthError("");
+        const userData = {
+          uid: user.uid,
+          fullName: user.displayName as string,
+          email: user.email,
+          photoUrl: user.photoURL,
+
+          // Add any additional fields here
+        };
+        handleCreateAction(userData);
+      })
+      .catch((error) => {
+        const friendlyMessage = getFriendlyErrorMessage(error.code);
+
+        setAuthError(friendlyMessage);
+      })
+      .finally(() => {
+        setIsLoading(false);
+
+        navigate("/app/chat");
+      });
+  };
   return (
-    <StyledForm>
-      <StyledArrowBackIcon
-        style={{ fontSize: "40px" }}
-        onClick={() => navigate(-1)}
-      />
+    <StyledForm onSubmit={handleSubmit}>
+      <StyledArrowBackIcon onClick={() => navigate(-1)} aria-label="Go back" />
 
       <StyledImg src="/SignIn.png" alt="login-image" />
 
       <StyledSection>
         <StyledH1>Sign in</StyledH1>
-        <Input label="Email" type="email" required />
+        <Input
+          label="Email"
+          type="email"
+          name="email"
+          required
+          value={email}
+          onChange={handleEmailChange}
+          error={emailValid ? "" : "Invalid email address"}
+        />
         <Input
           label="Password"
           type={showPassword ? "text" : "password"}
           showPassword={showPassword}
           togglePasswordVisibility={togglePasswordVisibility}
           required
+          name="password"
+          value={password}
+          onChange={handlePasswordChange}
+          error={
+            passwordValid
+              ? ""
+              : "Must contain at least one number, one uppercase and lowercase letter, and at least 8 or more characters"
+          }
         />
-        <Button onClick={() => navigate("/app/chat")}>Sign in</Button>
+        {authError && <ErrorText>{authError}</ErrorText>}
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Signing in..." : "Sign in"}
+        </Button>
 
         <ForgotPasswordText>
           Forgot your password? <a href="/forgot-password">Reset it</a>
@@ -108,15 +286,19 @@ export default function Login() {
 
         <SocialButton
           backgroundColor="#db4437"
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) => GoogleSignIn(e)}
           icon={<GoogleIcon />}
           label="Sign in with Google"
-          onClick={() => console.log("Google login")}
+          disabled={isLoading}
         />
         <SocialButton
-          backgroundColor="#4267b2"
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+            faceBookSignIn(e)
+          }
           icon={<FacebookIcon />}
           label="Sign in with Facebook"
-          onClick={() => console.log("Facebook login")}
+          backgroundColor="#4267b2"
+          disabled={isLoading}
         />
       </StyledSection>
     </StyledForm>

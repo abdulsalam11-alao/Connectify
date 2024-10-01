@@ -76,6 +76,22 @@ export default function MessageList() {
           <Timestamp>09:31</Timestamp>
         </StyledDiv>
       </MessageItem>
+      <MessageItem onClick={() => navigate("/chatpage")}>
+        <MessageDetails>
+          <Avatar
+            src="https://lh3.googleusercontent.com/a/ACg8ocLn2jt8_7doj3-_uHr_MyMFlA-PeFQklZCbkQ6xoHsmWFnB1epn=s96-c"
+            alt="Anna's avatar"
+          />
+          <div>
+            <Name>Anna</Name>
+            <MessagePreview>Yay!</MessagePreview>
+          </div>
+        </MessageDetails>
+        <StyledDiv>
+          <NewBadge>NEW</NewBadge>
+          <Timestamp>09:31</Timestamp>
+        </StyledDiv>
+      </MessageItem>
     </MessageListContainer>
   );
 }

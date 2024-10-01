@@ -5,7 +5,8 @@ interface SocialButtonProps {
   backgroundColor: string;
   icon: React.ReactNode;
   label: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  disabled?: boolean;
 }
 
 const StyledButton = styled.button<{ $backgroundColor: string }>`
@@ -40,9 +41,14 @@ const SocialButton: React.FC<SocialButtonProps> = ({
   icon,
   label,
   onClick,
+  disabled,
 }) => {
   return (
-    <StyledButton $backgroundColor={backgroundColor} onClick={onClick}>
+    <StyledButton
+      $backgroundColor={backgroundColor}
+      onClick={onClick}
+      disabled={disabled}
+    >
       <IconWrapper>{icon}</IconWrapper>
       {label}
     </StyledButton>
