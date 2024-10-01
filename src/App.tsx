@@ -1,35 +1,111 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+
+import GlobalStyles from "./Styles/GlobalStyle";
+import GetStarted from "./pages/GetStarted";
+import Login from "./pages/Login";
+import CreateAccount from "./pages/CreateAccount";
+import Applayout from "./ui/Applayout";
+import MessagePage from "./pages/MessagePage";
+import Settings from "./pages/Settings";
+import EditProfile from "./components/EditProfile";
+import NewMessage from "./components/NewMessage";
+import ChatPage from "./pages/ChatPage";
+import SupportPage from "./pages/SupportPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import { ThemeProvider } from "./context/ThemeContext";
+import ProfilePage from "./pages/ProfilePage";
+import { UserProvider } from "./context/UserContext";
+import ProtectRoute from "./pages/ProtectRoute";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <UserProvider>
+      <ThemeProvider>
+        <BrowserRouter>
+          <GlobalStyles />
+          <Routes>
+            <Route path="/" index element={<GetStarted />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/create-account" element={<CreateAccount />} />
+
+            <Route
+              path="/app"
+              element={
+                <ProtectRoute>
+                  <Applayout />
+                </ProtectRoute>
+              }
+            >
+              <Route
+                path="chat"
+                element={
+                  <ProtectRoute>
+                    <MessagePage />
+                  </ProtectRoute>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <ProtectRoute>
+                    <Settings />
+                  </ProtectRoute>
+                }
+              />
+              <Route
+                path="editProfile"
+                element={
+                  <ProtectRoute>
+                    <EditProfile />
+                  </ProtectRoute>
+                }
+              />
+            </Route>
+            <Route
+              path="newMessage"
+              element={
+                <ProtectRoute>
+                  <NewMessage />
+                </ProtectRoute>
+              }
+            />
+            <Route
+              path="/chatpage"
+              element={
+                <ProtectRoute>
+                  <ChatPage />
+                </ProtectRoute>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <ProtectRoute>
+                  <ForgotPasswordPage />
+                </ProtectRoute>
+              }
+            />
+            <Route
+              path="/support"
+              element={
+                <ProtectRoute>
+                  <SupportPage />
+                </ProtectRoute>
+              }
+            />
+            <Route
+              path="/profile/:userId"
+              element={
+                <ProtectRoute>
+                  <ProfilePage />
+                </ProtectRoute>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </ThemeProvider>
+    </UserProvider>
+  );
 }
 
-export default App
+export default App;
