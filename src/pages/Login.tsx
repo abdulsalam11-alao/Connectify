@@ -16,7 +16,6 @@ import {
 
 import { getFriendlyErrorMessage } from "../ErrorMessage";
 import { auth, provider } from "../firebase/db";
-import { useUser } from "../hook/useUser";
 
 const StyledForm = styled.form`
   display: flex;
@@ -93,7 +92,6 @@ const ErrorText = styled.span`
 
 export default function Login() {
   const navigate = useNavigate();
-  const { handleCreateAction } = useUser();
 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -145,22 +143,34 @@ export default function Login() {
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         const user = userCredential.user;
-        localStorage.setItem("userToken", user.refreshToken);
+        const userToken = localStorage.getItem("userToken");
 
-        const userData = {
-          uid: user.uid,
-          fullName: user.displayName as string,
-          email: user.email,
-          photoUrl: user.photoURL,
-        };
-        handleCreateAction(userData);
+        if (userToken) {
+          const obj = JSON.parse(userToken);
+          const newobj = {
+            ...obj,
+            token: user.refreshToken,
+            email: user.email,
+          };
+          localStorage.setItem("userToken", JSON.stringify({ ...newobj }));
+          setAuthError("");
 
-        navigate("/app/chat");
+          navigate("/app/chat");
+        } else {
+          const newobj = {
+            token: user.refreshToken,
+            email: user.email,
+          };
+          localStorage.setItem("userToken", JSON.stringify({ ...newobj }));
+          setAuthError("");
+
+          navigate("/app/chat");
+        }
       })
       .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        console.log(errorCode, errorMessage);
+        const friendlyMessage = getFriendlyErrorMessage(error.code);
+        console.log(error.message);
+        setAuthError(friendlyMessage);
       })
       .finally(() => setIsLoading(false));
   };
@@ -179,21 +189,31 @@ export default function Login() {
         });
 
         const user = result.user;
-        localStorage.setItem("userToken", user.refreshToken);
+        const userToken = localStorage.getItem("userToken");
+
+        if (userToken) {
+          const obj = JSON.parse(userToken);
+          const newobj = {
+            ...obj,
+            token: user.refreshToken,
+            email: user.email,
+          };
+          localStorage.setItem("userToken", JSON.stringify({ ...newobj }));
+          setAuthError("");
+
+          navigate("/app/chat");
+        } else {
+          const newobj = {
+            token: user.refreshToken,
+            email: user.email,
+          };
+          localStorage.setItem("userToken", JSON.stringify({ ...newobj }));
+          setAuthError("");
+
+          navigate("/app/chat");
+        }
 
         // Clear any previous errors
-        setAuthError("");
-        const userData = {
-          uid: user.uid,
-          fullName: user.displayName as string,
-          email: user.email,
-          photoUrl: user.photoURL,
-
-          // Add any additional fields here
-        };
-        handleCreateAction(userData);
-
-        navigate("/app/chat");
       })
       .catch((error) => {
         const friendlyMessage = getFriendlyErrorMessage(error.code);
@@ -214,23 +234,35 @@ export default function Login() {
           display: "popup",
         });
         const user = result.user;
-        localStorage.setItem("userToken", user.refreshToken);
-
-        console.log(user);
 
         const credential = FacebookAuthProvider?.credentialFromResult(result);
         const accessToken = credential?.accessToken;
 
-        setAuthError("");
-        const userData = {
-          uid: user.uid,
-          fullName: user.displayName as string,
-          email: user.email,
-          photoUrl: user.photoURL,
+        const userToken = localStorage.getItem("userToken");
 
-          // Add any additional fields here
-        };
-        handleCreateAction(userData);
+        if (userToken) {
+          const obj = JSON.parse(userToken);
+          const newobj = {
+            ...obj,
+            token: user.refreshToken,
+            email: user.email,
+          };
+          localStorage.setItem("userToken", JSON.stringify({ ...newobj }));
+          setAuthError("");
+
+          navigate("/app/chat");
+        } else {
+          const newobj = {
+            token: user.refreshToken,
+            email: user.email,
+          };
+          localStorage.setItem("userToken", JSON.stringify({ ...newobj }));
+          setAuthError("");
+
+          navigate("/app/chat");
+        }
+
+        setAuthError("");
       })
       .catch((error) => {
         const friendlyMessage = getFriendlyErrorMessage(error.code);

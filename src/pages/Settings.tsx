@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase/db";
+import { useUser } from "../hook/useUser";
 
 const Container = styled.div`
   width: 100%;
@@ -49,6 +50,20 @@ const Avatar = styled.img`
   margin-right: 10px;
 `;
 
+const AvatarFallback = styled.div`
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+  font-size: 20px;
+  margin-right: 10px;
+`;
+
 const ProfileDetails = styled.div`
   display: flex;
   flex-direction: column;
@@ -89,7 +104,6 @@ const MenuItem = styled.div`
   }
 `;
 
-// Styled forward arrow icon
 const StyledArrowForwardIcon = styled(ArrowForwardIosIcon)`
   color: var(--color-grey);
   font-size: 18px;
@@ -97,29 +111,43 @@ const StyledArrowForwardIcon = styled(ArrowForwardIosIcon)`
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { state: user } = useUser();
+  const { user: userCred } = user;
+
   const [isLoading, setIsLoading] = useState(false);
+
   function handleSignOut() {
     setIsLoading(true);
     signOut(auth)
       .then(() => {
-        // Sign-out successful.
         localStorage.removeItem("userToken");
         setIsLoading(false);
         navigate("/Login");
       })
       .catch((error) => {
-        // An error happened.
+        // Handle error
       });
   }
+
+  const getInitials = (name: string) => {
+    return name ? name.charAt(0).toUpperCase() : "";
+  };
+
   return (
     <Container>
       <Header>Settings</Header>
       <ThemeToggle />
       <ProfileSection onClick={() => navigate("/app/editProfile")}>
         <div>
-          <Avatar src="https://via.placeholder.com/50" alt="Profile" />
+          {userCred?.photoUrl ? (
+            <Avatar src={userCred?.photoUrl as string} alt="Profile Image" />
+          ) : (
+            <AvatarFallback>
+              {getInitials(userCred?.fullName || "User")}
+            </AvatarFallback>
+          )}
           <ProfileDetails>
-            <ProfileName>Yana Petrov</ProfileName>
+            <ProfileName>{userCred?.fullName}</ProfileName>
             <ProfileEditText>Edit your profile</ProfileEditText>
           </ProfileDetails>
         </div>

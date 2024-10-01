@@ -1,9 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import Avatar from "@mui/material/Avatar";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
+import { db } from "../firebase/db";
+import { collection, getDocs } from "firebase/firestore";
+import Loader from "../ui/Loader";
+
+interface User {
+  id: string;
+  name: string;
+  imageUrl: string;
+}
 
 const Container = styled.div`
   width: 100%;
@@ -86,16 +95,62 @@ const UserName = styled.span`
 
 const NewMessagePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const userToken = localStorage.getItem("userToken");
+  let loggedInEmail: string | null = null;
 
-  const suggestedUsers = [
-    { name: "Anna", imageUrl: "https://via.placeholder.com/40" },
-    { name: "Sylvester", imageUrl: "https://via.placeholder.com/40" },
-  ];
+  if (userToken) {
+    const obj = JSON.parse(userToken);
+    loggedInEmail = obj?.email;
+    console.log("Logged in user's email:", loggedInEmail);
+  }
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const usersRef = collection(db, "users");
+        const snapshot = await getDocs(usersRef);
+        const usersMap: { [key: string]: User } = {};
+
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const userId = data.uid;
+
+          // Skip the logged-in user based on email
+          if (data.email !== loggedInEmail) {
+            if (!usersMap[userId]) {
+              usersMap[userId] = {
+                id: userId,
+                name: data.fullName,
+                imageUrl: data.photoUrl,
+              };
+            }
+          }
+        });
+
+        const usersList = Object.values(usersMap);
+        setSuggestedUsers(usersList);
+        console.log(usersList); // Log the users list to verify the data
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [loggedInEmail]); // Add loggedInEmail to dependency array
+
+  const filteredUsers = suggestedUsers.filter((user) =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  function handlProfileClick(id: string) {
+    navigate(`profile/${id}`);
+  }
   return (
     <Container>
-      {/* Header Section */}
       <Header>
         <Title>New Message</Title>
         <CancelButton onClick={() => navigate(-1)}>
@@ -103,7 +158,6 @@ const NewMessagePage: React.FC = () => {
         </CancelButton>
       </Header>
 
-      {/* Search Input Field */}
       <InputField
         type="text"
         placeholder="To"
@@ -111,18 +165,28 @@ const NewMessagePage: React.FC = () => {
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
-      {/* Suggested Users List */}
       <SuggestedTitle>Suggested</SuggestedTitle>
-      <SuggestedList>
-        {suggestedUsers.map((user, index) => (
-          <SuggestedItem key={index}>
-            <Avatar alt={user.name} src={user.imageUrl} />
-            <UserInfo>
-              <UserName>{user.name}</UserName>
-            </UserInfo>
-          </SuggestedItem>
-        ))}
-      </SuggestedList>
+
+      {loading ? (
+        <Loader />
+      ) : filteredUsers.length > 0 ? (
+        <SuggestedList>
+          {filteredUsers.map((user) => (
+            <SuggestedItem key={user.id}>
+              <Avatar
+                alt={user.name}
+                src={user.imageUrl}
+                onClick={() => handlProfileClick(user.id)}
+              />
+              <UserInfo>
+                <UserName>{user.name}</UserName>
+              </UserInfo>
+            </SuggestedItem>
+          ))}
+        </SuggestedList>
+      ) : (
+        <p>No users found.</p>
+      )}
     </Container>
   );
 };

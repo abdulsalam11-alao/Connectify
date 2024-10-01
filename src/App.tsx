@@ -77,14 +77,7 @@ function App() {
                 </ProtectRoute>
               }
             />
-            <Route
-              path="/forgot-password"
-              element={
-                <ProtectRoute>
-                  <ForgotPasswordPage />
-                </ProtectRoute>
-              }
-            />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route
               path="/support"
               element={
@@ -94,7 +87,7 @@ function App() {
               }
             />
             <Route
-              path="/profile/:userId"
+              path="/newMessage/profile/:userId"
               element={
                 <ProtectRoute>
                   <ProfilePage />

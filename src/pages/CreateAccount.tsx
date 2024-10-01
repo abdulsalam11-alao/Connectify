@@ -13,7 +13,8 @@ import {
   signInWithPopup,
   FacebookAuthProvider,
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, getDoc } from "firebase/firestore";
+
 import { getFriendlyErrorMessage } from "../ErrorMessage";
 
 // Styled Components
@@ -238,14 +239,22 @@ export default function CreateAccount() {
             uid: user.uid,
             fullName: fullname.trim(),
             email: user.email,
+            photoUrl: user.photoURL,
           };
 
           setAuthError("");
           setIsloading(false);
+          const UserCollectionRef = collection(db, "users");
 
-          navigate("/login");
+          const userRef = doc(UserCollectionRef, user.uid);
+          setDoc(userRef, userData, { merge: true }).then(() => {
+            localStorage.setItem(
+              "userToken",
+              JSON.stringify({ token: null, email: user.email })
+            );
 
-          return setDoc(doc(db, "users", user.uid), userData);
+            navigate("/login");
+          });
         })
         .catch((error) => {
           const friendlyMessage = getFriendlyErrorMessage(error.code);
@@ -276,12 +285,22 @@ export default function CreateAccount() {
           uid: user.uid,
           fullName: user.displayName as string,
           email: user.email,
+          photoUrl: user.photoURL,
+
           // Add any additional fields here
         };
 
-        navigate("/login");
+        const UserCollectionRef = collection(db, "users");
 
-        return setDoc(doc(db, "users", user.uid), userData);
+        const userRef = doc(UserCollectionRef, user.uid);
+        setDoc(userRef, userData, { merge: true }).then(() => {
+          localStorage.setItem(
+            "userToken",
+            JSON.stringify({ token: null, email: user.email })
+          );
+
+          navigate("/login");
+        });
       })
       .catch((error) => {
         const friendlyMessage = getFriendlyErrorMessage(error.code);
@@ -313,11 +332,21 @@ export default function CreateAccount() {
           uid: user.uid,
           fullName: user.displayName as string,
           email: user.email,
+          photoUrl: user.photoURL,
+
           // Add any additional fields here
         };
-        navigate("/login");
+        const UserCollectionRef = collection(db, "users");
 
-        return setDoc(doc(db, "users", user.uid), userData);
+        const userRef = doc(UserCollectionRef, user.uid);
+        setDoc(userRef, userData, { merge: true }).then(() => {
+          localStorage.setItem(
+            "userToken",
+            JSON.stringify({ token: null, email: user.email })
+          );
+
+          navigate("/login");
+        });
       })
       .catch((error) => {
         const friendlyMessage = getFriendlyErrorMessage(error.code);

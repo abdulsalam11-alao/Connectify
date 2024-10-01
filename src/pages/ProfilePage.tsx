@@ -2,30 +2,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import styled from "styled-components";
+import { db } from "../firebase/db";
+import { doc, getDoc } from "firebase/firestore";
 
 // Mock API call to fetch user data by ID (Replace this with a real API call)
 const fetchUserData = (userId: string) => {
-  const mockUsers = [
-    {
-      id: "1",
-      name: "John Doe",
-      email: "john@example.com",
-      bio: "Web Developer",
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      email: "jane@example.com",
-      bio: "Graphic Designer",
-    },
-    {
-      id: "3",
-      name: "Mike Johnson",
-      email: "mike@example.com",
-      bio: "Product Manager",
-    },
-  ];
-
   return mockUsers.find((user) => user.id === userId);
 };
 
@@ -37,6 +18,20 @@ const Container = styled.div`
   background-color: var(--background-light);
   border-radius: 8px;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+`;
+
+const AvatarFallback = styled.div`
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+  font-size: 20px;
+  margin-right: 10px;
 `;
 
 const Title = styled.h2`
@@ -62,21 +57,33 @@ const BackButton = styled.button`
   border-radius: 4px;
   cursor: pointer;
 `;
-
+const Avatar = styled.img`
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+`;
 const ProfilePage: React.FC = () => {
-  const { userId } = useParams<{ userId: string }>(); // Get userId from URL params
-  const [user, setUser] = useState<any>(null); // State to store user data
+  const { userId } = useParams<{ userId: string }>();
+  console.log(userId);
 
-  // Fetch user data on component mount
-  useEffect(() => {
+  const [user, setUser] = useState<any>(null);
+  console.log(user);
+
+  async function getUser() {
     if (userId) {
-      const fetchedUser = fetchUserData(userId);
-      setUser(fetchedUser);
-    }
-  }, [userId]);
+      const userRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userRef);
+      setUser(userDoc.data());
 
-  // Handle case where user is not found
-  if (!user) {
+      // Process the user document
+    } else {
+      console.error("User ID is undefined");
+    }
+  }
+  getUser();
+  if (!user)
     return (
       <Container>
         <Title>User Not Found</Title>
@@ -84,19 +91,26 @@ const ProfilePage: React.FC = () => {
         <BackButton onClick={() => window.history.back()}>Back</BackButton>
       </Container>
     );
-  }
-
+  const getInitials = (name: string) => {
+    return name ? name.charAt(0).toUpperCase() : "";
+  };
   return (
     <Container>
-      <Title>{user.name}'s Profile</Title>
+      <Title>{user.fullName}'s Profile</Title>
+      <div>
+        {user?.photoUrl ? (
+          <Avatar src={user?.photoUrl as string} alt="Profile Image" />
+        ) : (
+          <AvatarFallback>
+            {getInitials(user?.fullName || "User")}
+          </AvatarFallback>
+        )}
+      </div>
       <UserInfo>
-        <Label>Name:</Label> {user.name}
+        <Label>Name:</Label> {user.fullName}
       </UserInfo>
       <UserInfo>
         <Label>Email:</Label> {user.email}
-      </UserInfo>
-      <UserInfo>
-        <Label>Bio:</Label> {user.bio}
       </UserInfo>
 
       <BackButton onClick={() => window.history.back()}>Back</BackButton>
