@@ -21,6 +21,7 @@ type UserAction = {
 
 export type UserContextType = {
   handleCreateAction: (user: User) => void;
+  state: UserState;
 };
 
 export const UserContext = createContext<UserContextType | null>(null);
@@ -60,7 +61,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
   }
 
   return (
-    <UserContext.Provider value={{ handleCreateAction }}>
+    <UserContext.Provider value={{ handleCreateAction, state }}>
       {children}
     </UserContext.Provider>
   );
