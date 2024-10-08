@@ -1,3 +1,5 @@
+// GlobalStyles.tsx
+
 import { createGlobalStyle } from "styled-components";
 
 const GlobalStyles = createGlobalStyle`
@@ -40,18 +42,18 @@ const GlobalStyles = createGlobalStyle`
     --background-light: #343a40;
     --background-dark: #212529;
     
-    --text-light: #343a40; 
-    --text-dark: #f8f9fa; 
-    
+    --text-light: #ffffff; /* Ensure light text remains white in dark mode */
+    --text-dark: #f8f9fa;  /* Light text color for other elements */
+
     --primary-color: var(--color-blue); 
     --primary-color-dark: #0056b3; 
   }
 
- * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box; 
-}
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; 
+  }
 
   body {
     background-color: var(--background-light); /* Light mode background */
@@ -59,12 +61,13 @@ const GlobalStyles = createGlobalStyle`
     line-height: 1.6;
     font-size: 16px; /* Base font size */
     overflow-x: hidden; /* Prevent horizontal scroll */
+    font-family: 'Roboto', sans-serif; /* Apply Roboto font */
   }
 
   /* Dark Mode Styles */
   body.dark-mode {
     background-color: var(--background-dark); 
-    color: var(--text-light); 
+    color: var(--text-light); /* Dark mode text color set to white */
   }
 
   a {

@@ -1,21 +1,26 @@
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import GlobalStyles from "./Styles/GlobalStyle";
-import GetStarted from "./pages/GetStarted";
-import Login from "./pages/Login";
-import CreateAccount from "./pages/CreateAccount";
-import Applayout from "./ui/Applayout";
-import MessagePage from "./pages/MessagePage";
-import Settings from "./pages/Settings";
-import EditProfile from "./components/EditProfile";
-import NewMessage from "./components/NewMessage";
-import ChatPage from "./pages/ChatPage";
-import SupportPage from "./pages/SupportPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import { ThemeProvider } from "./context/ThemeContext";
-import ProfilePage from "./pages/ProfilePage";
 import { UserProvider } from "./context/UserContext";
 import ProtectRoute from "./pages/ProtectRoute";
+import FullPageSpinner from "./ui/FullPageSpinner";
+
+// Lazy load components
+const GetStarted = lazy(() => import("./pages/GetStarted"));
+const Login = lazy(() => import("./pages/Login"));
+const CreateAccount = lazy(() => import("./pages/CreateAccount"));
+const Applayout = lazy(() => import("./ui/Applayout"));
+const MessagePage = lazy(() => import("./pages/MessagePage"));
+const Settings = lazy(() => import("./pages/Settings"));
+const EditProfile = lazy(() => import("./components/EditProfile"));
+const NewMessage = lazy(() => import("./components/NewMessage"));
+const ChatPage = lazy(() => import("./pages/ChatPage"));
+const SupportPage = lazy(() => import("./pages/SupportPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const PageNotFound = lazy(() => import("./pages/PageNotFound"));
 
 function App() {
   return (
@@ -23,78 +28,82 @@ function App() {
       <ThemeProvider>
         <BrowserRouter>
           <GlobalStyles />
-          <Routes>
-            <Route path="/" index element={<GetStarted />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/create-account" element={<CreateAccount />} />
+          <Suspense fallback={<FullPageSpinner />}>
+            <Routes>
+              <Route path="/" index element={<GetStarted />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/create-account" element={<CreateAccount />} />
 
-            <Route
-              path="/app"
-              element={
-                <ProtectRoute>
-                  <Applayout />
-                </ProtectRoute>
-              }
-            >
               <Route
-                path="chat"
+                path="/app"
                 element={
                   <ProtectRoute>
-                    <MessagePage />
+                    <Applayout />
+                  </ProtectRoute>
+                }
+              >
+                <Route
+                  path="chat"
+                  element={
+                    <ProtectRoute>
+                      <MessagePage />
+                    </ProtectRoute>
+                  }
+                />
+                <Route
+                  path="settings"
+                  element={
+                    <ProtectRoute>
+                      <Settings />
+                    </ProtectRoute>
+                  }
+                />
+                <Route
+                  path="editProfile"
+                  element={
+                    <ProtectRoute>
+                      <EditProfile />
+                    </ProtectRoute>
+                  }
+                />
+              </Route>
+              <Route
+                path="newMessage"
+                element={
+                  <ProtectRoute>
+                    <NewMessage />
                   </ProtectRoute>
                 }
               />
               <Route
-                path="settings"
+                path="/chatpage/:chatid/:messageid"
                 element={
                   <ProtectRoute>
-                    <Settings />
+                    <ChatPage />
+                  </ProtectRoute>
+                }
+              />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route
+                path="/support"
+                element={
+                  <ProtectRoute>
+                    <SupportPage />
                   </ProtectRoute>
                 }
               />
               <Route
-                path="editProfile"
+                path="/newMessage/profile/:userId"
                 element={
                   <ProtectRoute>
-                    <EditProfile />
+                    <ProfilePage />
                   </ProtectRoute>
                 }
               />
-            </Route>
-            <Route
-              path="newMessage"
-              element={
-                <ProtectRoute>
-                  <NewMessage />
-                </ProtectRoute>
-              }
-            />
-            <Route
-              path="/chatpage/:chatid/:messageid"
-              element={
-                <ProtectRoute>
-                  <ChatPage />
-                </ProtectRoute>
-              }
-            />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route
-              path="/support"
-              element={
-                <ProtectRoute>
-                  <SupportPage />
-                </ProtectRoute>
-              }
-            />
-            <Route
-              path="/newMessage/profile/:userId"
-              element={
-                <ProtectRoute>
-                  <ProfilePage />
-                </ProtectRoute>
-              }
-            />
-          </Routes>
+
+              <Route path="*" element={<PageNotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </ThemeProvider>
     </UserProvider>

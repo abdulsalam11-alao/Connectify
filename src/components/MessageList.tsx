@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { db } from "../firebase/db";
 import { useUser } from "../hook/useUser";
-import { UserWithRef } from "../context/UserContext"; // Ensure this import includes the updated interface
+import { UserWithRef } from "../context/UserContext";
 import FullPageSpinner from "../ui/FullPageSpinner";
 
 // Styled Components

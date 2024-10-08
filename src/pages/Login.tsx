@@ -237,6 +237,7 @@ export default function Login() {
 
         const credential = FacebookAuthProvider?.credentialFromResult(result);
         const accessToken = credential?.accessToken;
+        console.log(accessToken);
 
         const userToken = localStorage.getItem("userToken");
 

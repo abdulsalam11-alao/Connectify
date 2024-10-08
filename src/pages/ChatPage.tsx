@@ -4,12 +4,15 @@ import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import Avatar from "@mui/material/Avatar";
 import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import PhoneIcon from "@mui/icons-material/Phone";
 import VideoCallIcon from "@mui/icons-material/VideoCall";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import SendIcon from "@mui/icons-material/Send";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ImageIcon from "@mui/icons-material/Image";
+import MicIcon from "@mui/icons-material/Mic";
+import StopIcon from "@mui/icons-material/Stop";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   addDoc,
@@ -22,7 +25,6 @@ import {
   serverTimestamp,
   setDoc,
   deleteDoc,
-  Timestamp,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db } from "../firebase/db";
@@ -38,6 +40,7 @@ interface Message {
   id: string;
   text: string;
   imageUrl?: string;
+  audioUrl?: string;
   time: string;
   isOwnMessage: boolean;
 }
@@ -60,7 +63,7 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 8px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--color-grey);
 `;
 
 const UserInfo = styled.div`
@@ -76,6 +79,7 @@ const UserDetails = styled.div`
 
 const UserName = styled.span`
   font-weight: bold;
+  color: var(--text-dark);
 `;
 
 const UserStatus = styled.span`
@@ -97,19 +101,40 @@ const MessagesContainer = styled.div`
 
 const Message = styled.div<MessageProps>`
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: ${(props) =>
     props.isOwnMessage ? "flex-end" : "flex-start"};
   margin: 8px 0;
 `;
 
 const MessageBubble = styled.div<MessageProps>`
-  background-color: ${(props) => (props.isOwnMessage ? "#d1e7ff" : "#ffffff")};
+  background-color: ${(props) =>
+    props.isOwnMessage ? "var(--color-blue)" : "var(--background-light)"};
+  color: ${(props) =>
+    props.isOwnMessage ? "var(--text-light)" : "var(--text-dark)"};
   padding: 10px;
   border-radius: 16px;
   max-width: 60%;
-  color: var(--text-dark);
+  min-width: 50%;
   position: relative;
+`;
+
+const DeleteButton = styled(IconButton)`
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: rgba(255, 255, 255, 0.7);
+  color: var(--color-red);
+  opacity: 0;
+  transition: opacity 0.3s ease, background-color 0.3s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 1);
+  }
+
+  ${MessageBubble}:hover & {
+    opacity: 1;
+  }
 `;
 
 const TimeStamp = styled.span<MessageProps>`
@@ -123,7 +148,9 @@ const TimeStamp = styled.span<MessageProps>`
 const InputContainer = styled.div`
   display: flex;
   padding: 8px;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--color-grey);
+  align-items: center;
+  background-color: var(--background-light);
 `;
 
 const InputField = styled.input`
@@ -131,18 +158,24 @@ const InputField = styled.input`
   padding: 10px;
   border: none;
   border-radius: 20px;
-  background-color: #f1f1f1;
+  background-color: var(--color-grey);
+  color: var(--text-dark);
   font-size: 14px;
 
   &:focus {
     outline: none;
-    background-color: #e8e8e8;
+    background-color: var(--color-grey);
   }
 `;
 
 const SendButton = styled(IconButton)`
   color: var(--primary-color);
   margin-left: 8px;
+`;
+
+const AudioPlayer = styled.audio`
+  margin-top: 10px;
+  width: 100%;
 `;
 
 // Updated ChatPage Component
@@ -156,6 +189,14 @@ const ChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+
+  // Audio Recording States
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
+  );
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioURL, setAudioURL] = useState<string>("");
 
   // Function to scroll to the latest message
   const scrollToBottom = () => {
@@ -204,17 +245,15 @@ const ChatPage: React.FC = () => {
         const chatDocRef = doc(db, "chat", uniqueChatId);
         const chatDoc = await getDoc(chatDocRef);
 
-        console.log("Chat document:", chatDoc);
-
-        if (chatDoc.exists()) {
-          console.log("Chat already exists with ID:", chatDoc.id);
-        } else {
+        if (!chatDoc.exists()) {
           await setDoc(
             chatDocRef,
             { member: chatMembers, timestamp: serverTimestamp() },
             { merge: true }
           );
           console.log("New chat created with ID:", chatDocRef.id);
+        } else {
+          console.log("Chat already exists with ID:", chatDoc.id);
         }
       } catch (error) {
         console.error("Error checking or creating chat:", error);
@@ -248,6 +287,7 @@ const ChatPage: React.FC = () => {
             id: doc.id,
             text: data.message,
             imageUrl: data.imageUrl || undefined,
+            audioUrl: data.audioUrl || undefined, // Capture audio URL
             time: data.timestamp
               ? data.timestamp.toDate().toLocaleTimeString([], {
                   hour: "2-digit",
@@ -284,9 +324,63 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  // Handle audio upload
+  const handleAudioUpload = async (audioBlob: Blob): Promise<string | null> => {
+    const storage = getStorage();
+    const timestamp = Date.now();
+    const storageRef = ref(storage, `audio/audio-${timestamp}.webm`);
+
+    try {
+      const snapshot = await uploadBytes(storageRef, audioBlob);
+      const url = await getDownloadURL(snapshot.ref);
+      return url;
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+      return null;
+    }
+  };
+
+  // Start Recording Audio
+  const startRecording = async () => {
+    if (isRecording) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      setMediaRecorder(recorder);
+      recorder.start();
+      setIsRecording(true);
+      console.log("Recording started");
+
+      const chunks: BlobPart[] = [];
+
+      recorder.ondataavailable = (e) => {
+        chunks.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        setAudioBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setAudioURL(url);
+        console.log("Recording stopped");
+      };
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+    }
+  };
+
+  // Stop Recording Audio
+  const stopRecording = () => {
+    if (!isRecording || !mediaRecorder) return;
+
+    mediaRecorder.stop();
+    setIsRecording(false);
+  };
+
   // Handle sending a new message
   const handleSendMessage = async () => {
-    if (newMessage.trim() === "" && !selectedImage) return;
+    if (newMessage.trim() === "" && !selectedImage && !audioBlob) return;
 
     if (!userCred || !chatid) {
       console.warn("User credentials or chatid missing.");
@@ -309,6 +403,13 @@ const ChatPage: React.FC = () => {
       setSelectedImage(null);
     }
 
+    let audioUrl = null;
+    if (audioBlob) {
+      audioUrl = await handleAudioUpload(audioBlob);
+      setAudioBlob(null);
+      setAudioURL("");
+    }
+
     const messageData = {
       from: {
         name: userCred.fullName,
@@ -317,6 +418,7 @@ const ChatPage: React.FC = () => {
       userId: userCred.uid,
       message: newMessage.trim(),
       imageUrl,
+      audioUrl, // Add audio URL to message data
       chatRef: uniqueChatId,
       timestamp: serverTimestamp(),
     };
@@ -329,7 +431,9 @@ const ChatPage: React.FC = () => {
       await setDoc(
         chatDocRef,
         {
-          lastMessage: newMessage.trim() || (imageUrl ? "Image sent" : ""),
+          lastMessage:
+            newMessage.trim() ||
+            (imageUrl ? "Image sent" : audioUrl ? "Audio sent" : ""),
           lastMessageTime: serverTimestamp(),
         },
         { merge: true }
@@ -379,7 +483,10 @@ const ChatPage: React.FC = () => {
     <Container>
       <Header>
         <UserInfo>
-          <ArrowBackIosNewIcon onClick={() => navigate(-1)} />
+          <ArrowBackIosNewIcon
+            onClick={() => navigate(-1)}
+            style={{ cursor: "pointer" }}
+          />
           <Avatar
             alt={user?.fullName || "User"}
             src={user?.photoUrl || ""}
@@ -421,16 +528,24 @@ const ChatPage: React.FC = () => {
                     style={{ maxWidth: "100%", marginTop: "10px" }}
                   />
                 )}
-                {msg.isOwnMessage && (
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDeleteMessage(msg.id)}
-                    style={{ alignSelf: "flex-end", marginTop: "5px" }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
+                {msg.audioUrl && (
+                  <AudioPlayer controls>
+                    <source src={msg.audioUrl} type="audio/webm" />
+                    Your browser does not support the audio element.
+                  </AudioPlayer>
                 )}
               </div>
+              {/* Delete Button */}
+              {msg.isOwnMessage && (
+                <Tooltip title="Delete Message" arrow>
+                  <DeleteButton
+                    size="small"
+                    onClick={() => handleDeleteMessage(msg.id)}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </DeleteButton>
+                </Tooltip>
+              )}
               <TimeStamp isOwnMessage={msg.isOwnMessage}>{msg.time}</TimeStamp>
             </MessageBubble>
           </Message>
@@ -461,10 +576,16 @@ const ChatPage: React.FC = () => {
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
         />
+        <IconButton onClick={isRecording ? stopRecording : startRecording}>
+          {isRecording ? <StopIcon /> : <MicIcon />}
+        </IconButton>
         <SendButton onClick={handleSendMessage}>
           <SendIcon />
         </SendButton>
       </InputContainer>
+
+      {/* Display recorded audio before sending */}
+      {audioURL && <AudioPlayer controls src={audioURL} />}
     </Container>
   );
 };
