@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../hook/useUser";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/db";
+import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 
 const Container = styled.div`
   width: 100%;
@@ -94,8 +95,7 @@ const EditProfile: React.FC = () => {
 
   const [fullname, setFullname] = useState(userCred?.fullName || "");
   const [email, setEmail] = useState(userCred?.email || "");
-
-  // const { email, fullName, photoUrl } = user;
+  const [profileImage, setProfileImage] = useState<File | null>(null);
 
   useEffect(
     function () {
@@ -106,6 +106,13 @@ const EditProfile: React.FC = () => {
     },
     [userCred]
   );
+  function handleImageChange(
+    e: React.ChangeEvent<HTMLInputElement> | undefined
+  ) {
+    if (e?.target?.files && e?.target?.files.length > 0) {
+      setProfileImage(e.target.files[0]);
+    }
+  }
   async function handleSaveChanges() {
     if (!userCred?.uid) {
       console.error("User ID is not defined");
@@ -114,16 +121,23 @@ const EditProfile: React.FC = () => {
 
     const userRef = doc(db, "users", userCred.uid);
     const userDoc = await getDoc(userRef);
+    let photoUrl: string | null = userCred.photoUrl;
 
     if (!userDoc.exists()) {
       console.error("No document found for user ID:", userCred.uid);
-      return; // Handle the case where the user document does not exist
+      return;
+    }
+    if (profileImage) {
+      const storageRef = ref(getStorage(), `profileImages/${userCred.uid}`);
+      await uploadBytes(storageRef, profileImage);
+      photoUrl = await getDownloadURL(storageRef);
     }
 
     try {
       await updateDoc(userRef, {
         fullName: fullname,
         email: email,
+        photoUrl: photoUrl,
       });
       console.log("User profile updated successfully.");
       navigate("/app/Settings");
@@ -153,7 +167,16 @@ const EditProfile: React.FC = () => {
             {getInitials(userCred?.fullName || "User")}
           </AvatarFallback>
         )}
-        <ChangeText>Change profile picture</ChangeText>
+        <input
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          id="profileImageInput"
+          onChange={(e) => handleImageChange(e)}
+        />
+        <label htmlFor="profileImageInput">
+          <ChangeText>Change profile picture</ChangeText>
+        </label>
       </AvatarSection>
 
       <InputSection>

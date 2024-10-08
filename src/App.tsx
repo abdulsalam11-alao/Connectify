@@ -70,7 +70,7 @@ function App() {
               }
             />
             <Route
-              path="/chatpage"
+              path="/chatpage/:chatid/:messageid"
               element={
                 <ProtectRoute>
                   <ChatPage />
