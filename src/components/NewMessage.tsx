@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { db } from "../firebase/db";
 import { collection, getDocs } from "firebase/firestore";
 import Loader from "../ui/Loader";
+import { useUser } from "../hook/useUser";
 
 interface User {
   id: string;
@@ -98,13 +99,15 @@ const NewMessagePage: React.FC = () => {
   const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { state } = useUser();
+  const { user } = state;
+
   const userToken = localStorage.getItem("userToken");
   let loggedInEmail: string | null = null;
 
   if (userToken) {
     const obj = JSON.parse(userToken);
     loggedInEmail = obj?.email;
-    console.log("Logged in user's email:", loggedInEmail);
   }
 
   useEffect(() => {
@@ -132,7 +135,7 @@ const NewMessagePage: React.FC = () => {
 
         const usersList = Object.values(usersMap);
         setSuggestedUsers(usersList);
-        console.log(usersList); // Log the users list to verify the data
+        console.log(usersList);
       } catch (error) {
         console.error("Error fetching users:", error);
       } finally {
@@ -141,13 +144,16 @@ const NewMessagePage: React.FC = () => {
     };
 
     fetchUsers();
-  }, [loggedInEmail]); // Add loggedInEmail to dependency array
+  }, [loggedInEmail]);
 
   const filteredUsers = suggestedUsers.filter((user) =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
   function handlProfileClick(id: string) {
     navigate(`profile/${id}`);
+  }
+  function handleNewMessageChat(id: string) {
+    navigate(`/chatpage/${id}/${id}_${user?.uid}`);
   }
   return (
     <Container>
@@ -178,7 +184,7 @@ const NewMessagePage: React.FC = () => {
                 src={user.imageUrl}
                 onClick={() => handlProfileClick(user.id)}
               />
-              <UserInfo>
+              <UserInfo onClick={() => handleNewMessageChat(user.id)}>
                 <UserName>{user.name}</UserName>
               </UserInfo>
             </SuggestedItem>

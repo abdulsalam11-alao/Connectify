@@ -124,9 +124,7 @@ const SettingsPage: React.FC = () => {
         setIsLoading(false);
         navigate("/Login");
       })
-      .catch((error) => {
-        // Handle error
-      });
+      .catch((error) => {});
   }
 
   const getInitials = (name: string) => {

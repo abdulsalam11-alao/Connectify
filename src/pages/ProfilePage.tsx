@@ -1,14 +1,10 @@
-// src/pages/ProfilePage.tsx
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import styled from "styled-components";
 import { db } from "../firebase/db";
 import { doc, getDoc } from "firebase/firestore";
-
-// Mock API call to fetch user data by ID (Replace this with a real API call)
-const fetchUserData = (userId: string) => {
-  return mockUsers.find((user) => user.id === userId);
-};
+import Loader from "../ui/Loader";
+import { User } from "../context/UserContext";
 
 // Styled Components for the Profile Page
 const Container = styled.div`
@@ -57,6 +53,7 @@ const BackButton = styled.button`
   border-radius: 4px;
   cursor: pointer;
 `;
+
 const Avatar = styled.img`
   width: 50px;
   height: 50px;
@@ -64,56 +61,75 @@ const Avatar = styled.img`
   object-fit: cover;
   margin-right: 10px;
 `;
+
 const ProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
-  console.log(userId);
-
-  const [user, setUser] = useState<any>(null);
-  console.log(user);
+  const [isLoading, setIsLoading] = useState(true); // Start loading state as true
+  const [user, setUser] = useState<User | null>(Object);
 
   async function getUser() {
     if (userId) {
       const userRef = doc(db, "users", userId);
       const userDoc = await getDoc(userRef);
-      setUser(userDoc.data());
-
-      // Process the user document
+      setUser(userDoc.data() as User);
     } else {
       console.error("User ID is undefined");
     }
+    setIsLoading(false); // Set loading to false after fetching user data
   }
-  getUser();
+
+  useEffect(() => {
+    getUser();
+  }, [userId]); // Ensure to call getUser only when userId changes
+
   if (!user)
     return (
       <Container>
-        <Title>User Not Found</Title>
-        <p>The profile you're trying to view does not exist.</p>
-        <BackButton onClick={() => window.history.back()}>Back</BackButton>
+        {isLoading ? (
+          <Loader />
+        ) : (
+          <>
+            <Title>User Not Found</Title>
+            <p>The profile you're trying to view does not exist.</p>
+            <BackButton onClick={() => window.history.back()}>Back</BackButton>
+          </>
+        )}
       </Container>
     );
-  const getInitials = (name: string) => {
-    return name ? name.charAt(0).toUpperCase() : "";
-  };
+
+    const getInitials = (name: string) => {
+      return name
+        .split(" ")
+        .map((n) => n.charAt(0).toUpperCase())
+        .join("");
+    };
+
   return (
     <Container>
-      <Title>{user.fullName}'s Profile</Title>
-      <div>
-        {user?.photoUrl ? (
-          <Avatar src={user?.photoUrl as string} alt="Profile Image" />
-        ) : (
-          <AvatarFallback>
-            {getInitials(user?.fullName || "User")}
-          </AvatarFallback>
-        )}
-      </div>
-      <UserInfo>
-        <Label>Name:</Label> {user.fullName}
-      </UserInfo>
-      <UserInfo>
-        <Label>Email:</Label> {user.email}
-      </UserInfo>
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <>
+          <Title>{user.fullName}'s Profile</Title>
+          <div>
+            {user?.photoUrl ? (
+              <Avatar src={user?.photoUrl as string} alt="Profile Image" />
+            ) : (
+              <AvatarFallback>
+                {getInitials(user?.fullName || "User")}
+              </AvatarFallback>
+            )}
+          </div>
+          <UserInfo>
+            <Label>Name:</Label> {user.fullName}
+          </UserInfo>
+          <UserInfo>
+            <Label>Email:</Label> {user.email}
+          </UserInfo>
 
-      <BackButton onClick={() => window.history.back()}>Back</BackButton>
+          <BackButton onClick={() => window.history.back()}>Back</BackButton>
+        </>
+      )}
     </Container>
   );
 };

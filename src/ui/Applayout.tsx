@@ -17,13 +17,12 @@ const Container = styled.div`
 export default function Applayout() {
   const userToken = localStorage.getItem("userToken");
 
-  const { handleCreateAction } = useUser();
+  const { setUser } = useUser();
 
   let email: string | null = null;
   if (userToken) {
     const obj = JSON.parse(userToken);
     email = obj?.email;
-    console.log("Logged in user's email:", email);
   }
 
   function GetCurrentUsers() {
@@ -40,7 +39,7 @@ export default function Applayout() {
         });
 
         if (matchedUser) {
-          handleCreateAction(matchedUser);
+          setUser(matchedUser);
         } else {
           console.log("No user found with the email:", email);
         }
