@@ -13,7 +13,7 @@ import {
   signInWithPopup,
   FacebookAuthProvider,
 } from "firebase/auth";
-import { doc, setDoc, collection, getDoc } from "firebase/firestore";
+import { doc, setDoc, collection } from "firebase/firestore";
 
 import { getFriendlyErrorMessage } from "../ErrorMessage";
 
@@ -325,6 +325,7 @@ export default function CreateAccount() {
 
         const credential = FacebookAuthProvider?.credentialFromResult(result);
         const accessToken = credential?.accessToken;
+        console.log(accessToken);
 
         setAuthError("");
 

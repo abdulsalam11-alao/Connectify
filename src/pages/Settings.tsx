@@ -1,3 +1,5 @@
+// SettingsPage.tsx
+
 import React, { useState } from "react";
 import styled from "styled-components";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -14,6 +16,7 @@ const Container = styled.div`
   margin: 0 auto;
   padding: 16px;
   background-color: var(--background-light);
+  color: var(--text-dark); /* Use CSS variable for text color */
   border-radius: 8px;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 `;
@@ -22,7 +25,7 @@ const Header = styled.h2`
   text-align: left;
   font-size: 24px;
   margin-bottom: 16px;
-  color: var(--primary-color);
+  color: var(--primary-color); /* Use CSS variable for primary color */
 `;
 
 const ProfileSection = styled.div`
@@ -31,14 +34,18 @@ const ProfileSection = styled.div`
   align-items: center;
   padding: 10px;
   border-radius: 8px;
-  background-color: #fff;
+  background-color: var(--background-light); /* Use CSS variable */
   margin-bottom: 16px;
-  margin-left: 0px;
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
   cursor: pointer;
 
   div {
     display: flex;
+  }
+
+  /* Dark Mode Styles */
+  body.dark-mode & {
+    background-color: var(--background-dark);
   }
 `;
 
@@ -71,20 +78,37 @@ const ProfileDetails = styled.div`
 
 const ProfileName = styled.span`
   font-weight: bold;
-  color: var(--text-dark);
+  color: var(--text-dark); /* Use CSS variable for text color */
+
+  /* Dark Mode Styles */
+  body.dark-mode & {
+    color: var(--text-light);
+  }
 `;
 
 const ProfileEditText = styled.span`
-  color: var(--color-grey);
+  color: var(--color-grey); /* Use CSS variable */
   font-size: 14px;
+
+  /* Dark Mode Styles */
+  body.dark-mode & {
+    color: var(--color-grey);
+  }
 `;
 
 const MenuSection = styled.div`
-  background-color: #fff;
+  background-color: var(--background-light);
+  color: var(--text-dark);
   padding: 10px;
   border-radius: 8px;
   margin-bottom: 16px;
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+
+  /* Dark Mode Styles */
+  body.dark-mode & {
+    background-color: var(--background-dark);
+    color: var(--text-light);
+  }
 `;
 
 const MenuItem = styled.div`
@@ -93,20 +117,30 @@ const MenuItem = styled.div`
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-grey);
 
   &:last-child {
     border-bottom: none;
   }
 
   &:hover {
-    background-color: var(--background-light);
+    background-color: var(--background-hover);
+  }
+
+  /* Dark Mode Styles */
+  body.dark-mode & {
+    border-bottom: 1px solid var(--color-grey);
   }
 `;
 
 const StyledArrowForwardIcon = styled(ArrowForwardIosIcon)`
   color: var(--color-grey);
   font-size: 18px;
+
+  /* Dark Mode Styles */
+  body.dark-mode & {
+    color: var(--color-grey);
+  }
 `;
 
 const SettingsPage: React.FC = () => {
@@ -124,7 +158,10 @@ const SettingsPage: React.FC = () => {
         setIsLoading(false);
         navigate("/Login");
       })
-      .catch((error) => {});
+      .catch((error) => {
+        console.error("Error signing out:", error);
+        setIsLoading(false);
+      });
   }
 
   const getInitials = (name: string) => {
@@ -145,7 +182,7 @@ const SettingsPage: React.FC = () => {
             </AvatarFallback>
           )}
           <ProfileDetails>
-            <ProfileName>{userCred?.fullName}</ProfileName>
+            <ProfileName>{userCred?.fullName || "Unknown User"}</ProfileName>
             <ProfileEditText>Edit your profile</ProfileEditText>
           </ProfileDetails>
         </div>

@@ -10,6 +10,11 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   background-color: var(--background-light);
+
+  /* Dark Mode Styles */
+  body.dark-mode & {
+    background-color: var(--background-dark);
+  }
 `;
 
 const Header = styled.header`
@@ -19,12 +24,23 @@ const Header = styled.header`
   padding: 10px;
   background-color: white;
   box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+
+  /* Dark Mode Styles */
+  body.dark-mode & {
+    background-color: var(--background-dark);
+    color: var(--text-light);
+  }
 `;
 
 const Title = styled.h1`
   font-size: 24px;
   font-weight: bold;
   color: var(--primary-color);
+
+  /* Dark Mode Styles */
+  body.dark-mode & {
+    color: var(--text-light);
+  }
 `;
 
 const EditButton = styled(Link)`
@@ -44,6 +60,16 @@ const EditButton = styled(Link)`
   svg {
     font-size: 30px;
     cursor: pointer;
+  }
+
+  /* Dark Mode Styles */
+  body.dark-mode & {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+
+    &:hover {
+      background-color: var(--primary-color-dark);
+    }
   }
 `;
 
