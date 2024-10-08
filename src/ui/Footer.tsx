@@ -1,6 +1,5 @@
 // Footer.tsx
 
-import React from "react";
 import ChatIcon from "@mui/icons-material/Chat";
 import SettingsIcon from "@mui/icons-material/Settings";
 import styled from "styled-components";
