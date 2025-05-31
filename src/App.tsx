@@ -30,9 +30,6 @@ function App() {
           <GlobalStyles />
           <Suspense fallback={<FullPageSpinner />}>
             <Routes>
-<<<<<<< HEAD
-              <Route path="/" index element={<GetStarted />} />
-=======
               <Route
                 path="/"
                 index
@@ -42,7 +39,6 @@ function App() {
                   </ProtectRoute>
                 }
               />
->>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
               <Route path="/login" element={<Login />} />
               <Route path="/create-account" element={<CreateAccount />} />
 
