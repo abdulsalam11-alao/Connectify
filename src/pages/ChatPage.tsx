@@ -1,5 +1,3 @@
-// ChatPage.tsx
-
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import Avatar from "@mui/material/Avatar";
@@ -109,11 +107,7 @@ const Message = styled.div<MessageProps>`
 
 const MessageBubble = styled.div<MessageProps>`
   background-color: ${(props) =>
-<<<<<<< HEAD
-    props.isOwnMessage ? "var(--color-blue)" : "var(--background-light)"};
-=======
     props.isOwnMessage ? "var(--color-blue)" : "grey"};
->>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
   color: ${(props) =>
     props.isOwnMessage ? "var(--text-light)" : "var(--text-dark)"};
   padding: 10px;
@@ -181,14 +175,7 @@ const AudioPlayer = styled.audio`
   margin-top: 10px;
   width: 100%;
 `;
-<<<<<<< HEAD
 
-// Updated ChatPage Component
-const ChatPage: React.FC = () => {
-  const { chatid } = useParams<{ chatid: string }>();
-  const [user, setUser] = useState<User | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-=======
 const RecordButton = styled(IconButton)<{ $isRecording: boolean }>`
   color: ${(props) =>
     props.$isRecording ? "var(--color-blue)" : "var(--color-grey)"};
@@ -203,7 +190,15 @@ const RecordButton = styled(IconButton)<{ $isRecording: boolean }>`
         : "var(--color-grey-light)"};
   }
 `;
-// Updated ChatPage Component
+
+const ImagePreview = styled.img`
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 10px;
+  margin-left: 8px;
+`;
+
+// Main Component
 const ChatPage: React.FC = () => {
   const { chatid } = useParams<{ chatid: string }>();
 
@@ -211,7 +206,6 @@ const ChatPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
->>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
   const { state: userState } = useUser();
   const { user: userCred } = userState;
   const navigate = useNavigate();
@@ -227,7 +221,7 @@ const ChatPage: React.FC = () => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioURL, setAudioURL] = useState<string>("");
 
-  // Function to scroll to the latest message
+  // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -309,22 +303,20 @@ const ChatPage: React.FC = () => {
 
     const unsubscribe = onSnapshot(
       q,
-      (snapshot) => {
-        const messagesData: Message[] = snapshot.docs.map((doc) => {
+      (querySnapshot) => {
+        const messagesData: Message[] = [];
+        querySnapshot.forEach((doc) => {
           const data = doc.data();
-          return {
+          messagesData.push({
             id: doc.id,
-            text: data.message,
-            imageUrl: data.imageUrl || undefined,
-            audioUrl: data.audioUrl || undefined, // Capture audio URL
+            text: data.text || "",
+            imageUrl: data.imageUrl || "",
+            audioUrl: data.audioUrl || "",
             time: data.timestamp
-              ? data.timestamp.toDate().toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "Just now",
-            isOwnMessage: data.userId === userCred.uid,
-          };
+              ? new Date(data.timestamp.seconds * 1000).toLocaleTimeString()
+              : "",
+            isOwnMessage: data.sender === userCred.uid,
+          });
         });
         setMessages(messagesData);
         scrollToBottom();
@@ -337,78 +329,139 @@ const ChatPage: React.FC = () => {
     return () => unsubscribe();
   }, [chatid, userCred]);
 
-  // Handle image upload
-<<<<<<< HEAD
-  const handleImageUpload = async (file: File): Promise<string | null> => {
-=======
+  // Handle image upload and preview
   const handleImageUploadAndPreview = async (
     event: React.ChangeEvent<HTMLInputElement>
   ): Promise<string | null> => {
     const file = event.target.files?.[0];
     if (!file) return null;
 
-    // Set the selected image for preview
     setSelectedImage(file);
 
-    // Create a preview URL
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreviewUrl(reader.result as string);
     };
     reader.readAsDataURL(file);
 
-    // Proceed with uploading the image to Firebase
->>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
-    const storage = getStorage();
-    const timestamp = Date.now();
-    const storageRef = ref(storage, `images/${file.name}-${timestamp}`);
-
     try {
+      const storage = getStorage();
+      const timestamp = Date.now();
+      const storageRef = ref(storage, `images/${file.name}-${timestamp}`);
+
       const snapshot = await uploadBytes(storageRef, file);
       const url = await getDownloadURL(snapshot.ref);
-<<<<<<< HEAD
       return url;
     } catch (error) {
       console.error("Error uploading image:", error);
       return null;
-=======
-      return url; // Return the uploaded image URL
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      return null; // Return null if there's an error
->>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
     }
   };
 
-  // Handle audio upload
-  const handleAudioUpload = async (audioBlob: Blob): Promise<string | null> => {
-    const storage = getStorage();
-    const timestamp = Date.now();
-    const storageRef = ref(storage, `audio/audio-${timestamp}.webm`);
+  // Send message
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() && !selectedImage && !audioBlob) return;
+
+    if (!userCred?.uid || !chatid) {
+      alert("User not authenticated or chat id missing.");
+      return;
+    }
+
+    const chatMembers = [userCred.uid, chatid].sort();
+    const uniqueChatId = chatMembers.join("_");
+
+    let imageUrl = "";
+    if (selectedImage) {
+      // If image preview url exists, we already uploaded the image so can use it
+      if (imagePreviewUrl) {
+        imageUrl = imagePreviewUrl;
+      } else {
+        const uploadedUrl = await handleImageUploadAndPreview({
+          target: { files: [selectedImage] },
+        } as unknown as React.ChangeEvent<HTMLInputElement>);
+        if (uploadedUrl) imageUrl = uploadedUrl;
+      }
+    }
+
+    let audioUrl = "";
+    if (audioBlob) {
+      try {
+        const storage = getStorage();
+        const timestamp = Date.now();
+        const audioRef = ref(
+          storage,
+          `audio/${userCred.uid}-${timestamp}.webm`
+        );
+
+        const snapshot = await uploadBytes(audioRef, audioBlob);
+        audioUrl = await getDownloadURL(snapshot.ref);
+      } catch (error) {
+        console.error("Error uploading audio:", error);
+      }
+    }
 
     try {
-      const snapshot = await uploadBytes(storageRef, audioBlob);
-      const url = await getDownloadURL(snapshot.ref);
-      return url;
+      const messagesCollectionRef = collection(
+        db,
+        "chatMessage",
+        uniqueChatId,
+        "messages"
+      );
+      await addDoc(messagesCollectionRef, {
+        sender: userCred.uid,
+        text: newMessage.trim() || "",
+        imageUrl: imageUrl || "",
+        audioUrl: audioUrl || "",
+        timestamp: serverTimestamp(),
+      });
+
+      setNewMessage("");
+      setSelectedImage(null);
+      setImagePreviewUrl(null);
+      setAudioBlob(null);
+      setAudioURL("");
     } catch (error) {
-      console.error("Error uploading audio:", error);
-      return null;
+      console.error("Error sending message:", error);
     }
   };
 
-  // Start Recording Audio
-  const startRecording = async () => {
-    if (isRecording) return;
+  // Handle text input change
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(event.target.value);
+  };
+
+  // Handle Delete Message
+  const handleDeleteMessage = async (id: string) => {
+    if (!chatid || !userCred?.uid) return;
+
+    const chatMembers = [userCred.uid, chatid].sort();
+    const uniqueChatId = chatMembers.join("_");
+
+    try {
+      const messageDocRef = doc(
+        db,
+        "chatMessage",
+        uniqueChatId,
+        "messages",
+        id
+      );
+      await deleteDoc(messageDocRef);
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+  };
+
+  // Audio Recording Handlers
+  const handleStartRecording = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("Audio recording is not supported on this browser.");
+      return;
+    }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
-      setMediaRecorder(recorder);
-      recorder.start();
-      setIsRecording(true);
-      console.log("Recording started");
-
-      const chunks: BlobPart[] = [];
+      let chunks: Blob[] = [];
 
       recorder.ondataavailable = (e) => {
         chunks.push(e.data);
@@ -419,257 +472,129 @@ const ChatPage: React.FC = () => {
         setAudioBlob(blob);
         const url = URL.createObjectURL(blob);
         setAudioURL(url);
-        console.log("Recording stopped");
+        chunks = [];
       };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
     } catch (error) {
-      console.error("Error accessing microphone:", error);
+      console.error("Error starting audio recording:", error);
     }
   };
 
-  // Stop Recording Audio
-  const stopRecording = () => {
-    if (!isRecording || !mediaRecorder) return;
-
-    mediaRecorder.stop();
-    setIsRecording(false);
-  };
-
-  // Handle sending a new message
-  const handleSendMessage = async () => {
-    if (newMessage.trim() === "" && !selectedImage && !audioBlob) return;
-
-    if (!userCred || !chatid) {
-      console.warn("User credentials or chatid missing.");
-      return;
-    }
-
-    const chatMembers = [userCred.uid, chatid].sort();
-    const uniqueChatId = chatMembers.join("_");
-
-    const messagesCollectionRef = collection(
-      db,
-      "chatMessage",
-      uniqueChatId,
-      "messages"
-    );
-
-    let imageUrl = null;
-    if (selectedImage) {
-<<<<<<< HEAD
-      imageUrl = await handleImageUpload(selectedImage);
-=======
-      imageUrl = await handleImageUploadAndPreview(selectedImage);
->>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
-      setSelectedImage(null);
-    }
-
-    let audioUrl = null;
-    if (audioBlob) {
-      audioUrl = await handleAudioUpload(audioBlob);
-      setAudioBlob(null);
-      setAudioURL("");
-    }
-
-    const messageData = {
-      from: {
-        name: userCred.fullName,
-        email: userCred.email,
-      },
-      userId: userCred.uid,
-      message: newMessage.trim(),
-      imageUrl,
-      audioUrl, // Add audio URL to message data
-      chatRef: uniqueChatId,
-      timestamp: serverTimestamp(),
-    };
-
-    try {
-      await addDoc(messagesCollectionRef, messageData);
-
-      // Update lastMessage and lastMessageTime in the chat document
-      const chatDocRef = doc(db, "chat", uniqueChatId);
-      await setDoc(
-        chatDocRef,
-        {
-          lastMessage:
-            newMessage.trim() ||
-            (imageUrl ? "Image sent" : audioUrl ? "Audio sent" : ""),
-          lastMessageTime: serverTimestamp(),
-        },
-        { merge: true }
-      );
-
-      setNewMessage("");
-    } catch (error) {
-      console.error("Error sending message:", error);
+  const handleStopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+      setIsRecording(false);
     }
   };
 
-  // Handle deleting a message
-  const handleDeleteMessage = async (messageId: string) => {
-    if (!chatid || !messageId) {
-      console.warn("Chat ID or Message ID is missing.");
-      return;
-    }
-
-    // Optional: Confirm deletion
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this message?"
-    );
-    if (!confirmDelete) return;
-
-    const chatMembers = [userCred?.uid, chatid].sort();
-    const uniqueChatId = chatMembers.join("_");
-
-    const messageDocRef = doc(
-      db,
-      "chatMessage",
-      uniqueChatId,
-      "messages",
-      messageId
-    );
-
-    try {
-      await deleteDoc(messageDocRef);
-      console.log(`Message with ID ${messageId} deleted successfully.`);
-      // Optionally, provide user feedback here (e.g., a toast notification)
-    } catch (error) {
-      console.error("Error deleting message:", error);
-      // Optionally, handle the error (e.g., show an error message to the user)
-    }
+  // Navigate back handler
+  const handleBack = () => {
+    navigate(-1);
   };
 
   return (
     <Container>
       <Header>
+        <Tooltip title="Back">
+          <IconButton onClick={handleBack}>
+            <ArrowBackIosNewIcon />
+          </IconButton>
+        </Tooltip>
         <UserInfo>
-          <ArrowBackIosNewIcon
-            onClick={() => navigate(-1)}
-            style={{ cursor: "pointer" }}
-          />
-          <Avatar
-            alt={user?.fullName || "User"}
-            src={user?.photoUrl || ""}
-            onClick={() => navigate(`/newMessage/profile/${chatid}`)}
-            style={{ cursor: "pointer" }}
-          />
+          <Avatar alt={user?.fullName || ""} src={user?.photoUrl || ""} />
           <UserDetails>
             <UserName>{user?.fullName || "Unknown User"}</UserName>
             <UserStatus>Online</UserStatus>
           </UserDetails>
         </UserInfo>
         <ActionIcons>
-          <IconButton>
-            <PhoneIcon />
-          </IconButton>
-          <IconButton>
-            <VideoCallIcon />
-          </IconButton>
+          <Tooltip title="Call">
+            <IconButton>
+              <PhoneIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Video Call">
+            <IconButton>
+              <VideoCallIcon />
+            </IconButton>
+          </Tooltip>
         </ActionIcons>
       </Header>
 
-<<<<<<< HEAD
-      {/* Messages Section */}
-=======
->>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
       <MessagesContainer>
-        {messages.map((msg) => (
-          <Message key={msg.id} isOwnMessage={msg.isOwnMessage}>
-            <MessageBubble isOwnMessage={msg.isOwnMessage}>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: msg.isOwnMessage ? "flex-end" : "flex-start",
-                }}
-              >
-                {msg.text && <span>{msg.text}</span>}
-                {msg.imageUrl && (
-                  <img
-                    src={msg.imageUrl}
-                    alt="Sent Image"
-                    style={{ maxWidth: "100%", marginTop: "10px" }}
-                  />
-                )}
-                {msg.audioUrl && (
-                  <AudioPlayer controls>
-                    <source src={msg.audioUrl} type="audio/webm" />
-                    Your browser does not support the audio element.
-                  </AudioPlayer>
-                )}
-              </div>
-              {/* Delete Button */}
-              {msg.isOwnMessage && (
-                <Tooltip title="Delete Message" arrow>
+        {messages.map(
+          ({ id, text, imageUrl, audioUrl, time, isOwnMessage }) => (
+            <Message key={id} isOwnMessage={isOwnMessage}>
+              <MessageBubble isOwnMessage={isOwnMessage}>
+                {text && <div>{text}</div>}
+                {imageUrl && <ImagePreview src={imageUrl} alt="Sent image" />}
+                {audioUrl && <AudioPlayer controls src={audioUrl} />}
+                <TimeStamp isOwnMessage={isOwnMessage}>{time}</TimeStamp>
+
+                {isOwnMessage && (
                   <DeleteButton
+                    aria-label="delete"
                     size="small"
-                    onClick={() => handleDeleteMessage(msg.id)}
+                    onClick={() => handleDeleteMessage(id)}
                   >
                     <DeleteIcon fontSize="small" />
                   </DeleteButton>
-                </Tooltip>
-              )}
-              <TimeStamp isOwnMessage={msg.isOwnMessage}>{msg.time}</TimeStamp>
-            </MessageBubble>
-          </Message>
-        ))}
+                )}
+              </MessageBubble>
+            </Message>
+          )
+        )}
         <div ref={messagesEndRef} />
       </MessagesContainer>
 
-      {/* Input Section */}
       <InputContainer>
-        <label htmlFor="image-upload">
-          <IconButton component="span">
-            <ImageIcon />
-          </IconButton>
-        </label>
-        <input
-          type="file"
-          accept="image/*"
-          style={{ display: "none" }}
-          id="image-upload"
-          onChange={(e) =>
-            setSelectedImage(e.target.files ? e.target.files[0] : null)
-          }
-        />
+        <IconButton
+          component="label"
+          title="Attach Image"
+          sx={{ color: "var(--color-blue)" }}
+        >
+          <ImageIcon />
+          <input
+            hidden
+            type="file"
+            accept="image/*"
+            onChange={handleImageUploadAndPreview}
+          />
+        </IconButton>
+
+        {imagePreviewUrl && (
+          <ImagePreview src={imagePreviewUrl} alt="Preview" />
+        )}
+
         <InputField
           type="text"
-          placeholder="Type here..."
+          placeholder="Type your message..."
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-<<<<<<< HEAD
+          onChange={handleInputChange}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
         />
-        <IconButton onClick={isRecording ? stopRecording : startRecording}>
-          {isRecording ? <StopIcon /> : <MicIcon />}
-        </IconButton>
-=======
-        />{" "}
+
         <RecordButton
           $isRecording={isRecording}
-          onClick={isRecording ? stopRecording : startRecording}
+          onClick={isRecording ? handleStopRecording : handleStartRecording}
+          title={isRecording ? "Stop Recording" : "Record Audio"}
         >
           {isRecording ? <StopIcon /> : <MicIcon />}
         </RecordButton>
->>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
-        <SendButton onClick={handleSendMessage}>
+
+        <SendButton aria-label="send" onClick={handleSendMessage}>
           <SendIcon />
         </SendButton>
       </InputContainer>
-<<<<<<< HEAD
 
-=======
-      {imagePreviewUrl && (
-        <div style={{ margin: "8px 0" }}>
-          <img
-            src={imagePreviewUrl}
-            alt="Preview"
-            style={{ maxWidth: "100%", borderRadius: "8px" }}
-          />
-        </div>
-      )}
->>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
-      {/* Display recorded audio before sending */}
       {audioURL && <AudioPlayer controls src={audioURL} />}
     </Container>
   );
