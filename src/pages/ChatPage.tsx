@@ -109,7 +109,11 @@ const Message = styled.div<MessageProps>`
 
 const MessageBubble = styled.div<MessageProps>`
   background-color: ${(props) =>
+<<<<<<< HEAD
     props.isOwnMessage ? "var(--color-blue)" : "var(--background-light)"};
+=======
+    props.isOwnMessage ? "var(--color-blue)" : "grey"};
+>>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
   color: ${(props) =>
     props.isOwnMessage ? "var(--text-light)" : "var(--text-dark)"};
   padding: 10px;
@@ -177,12 +181,37 @@ const AudioPlayer = styled.audio`
   margin-top: 10px;
   width: 100%;
 `;
+<<<<<<< HEAD
 
 // Updated ChatPage Component
 const ChatPage: React.FC = () => {
   const { chatid } = useParams<{ chatid: string }>();
   const [user, setUser] = useState<User | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+=======
+const RecordButton = styled(IconButton)<{ $isRecording: boolean }>`
+  color: ${(props) =>
+    props.$isRecording ? "var(--color-blue)" : "var(--color-grey)"};
+  background-color: ${(props) =>
+    props.$isRecording ? "var(--color-light-blue)" : "transparent"};
+  transition: background-color 0.3s ease, color 0.3s ease;
+
+  &:hover {
+    background-color: ${(props) =>
+      props.$isRecording
+        ? "var(--color-blue-hover)"
+        : "var(--color-grey-light)"};
+  }
+`;
+// Updated ChatPage Component
+const ChatPage: React.FC = () => {
+  const { chatid } = useParams<{ chatid: string }>();
+
+  const [user, setUser] = useState<User | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+>>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
   const { state: userState } = useUser();
   const { user: userCred } = userState;
   const navigate = useNavigate();
@@ -309,7 +338,27 @@ const ChatPage: React.FC = () => {
   }, [chatid, userCred]);
 
   // Handle image upload
+<<<<<<< HEAD
   const handleImageUpload = async (file: File): Promise<string | null> => {
+=======
+  const handleImageUploadAndPreview = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ): Promise<string | null> => {
+    const file = event.target.files?.[0];
+    if (!file) return null;
+
+    // Set the selected image for preview
+    setSelectedImage(file);
+
+    // Create a preview URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Proceed with uploading the image to Firebase
+>>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
     const storage = getStorage();
     const timestamp = Date.now();
     const storageRef = ref(storage, `images/${file.name}-${timestamp}`);
@@ -317,10 +366,17 @@ const ChatPage: React.FC = () => {
     try {
       const snapshot = await uploadBytes(storageRef, file);
       const url = await getDownloadURL(snapshot.ref);
+<<<<<<< HEAD
       return url;
     } catch (error) {
       console.error("Error uploading image:", error);
       return null;
+=======
+      return url; // Return the uploaded image URL
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      return null; // Return null if there's an error
+>>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
     }
   };
 
@@ -399,7 +455,11 @@ const ChatPage: React.FC = () => {
 
     let imageUrl = null;
     if (selectedImage) {
+<<<<<<< HEAD
       imageUrl = await handleImageUpload(selectedImage);
+=======
+      imageUrl = await handleImageUploadAndPreview(selectedImage);
+>>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
       setSelectedImage(null);
     }
 
@@ -508,7 +568,10 @@ const ChatPage: React.FC = () => {
         </ActionIcons>
       </Header>
 
+<<<<<<< HEAD
       {/* Messages Section */}
+=======
+>>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
       <MessagesContainer>
         {messages.map((msg) => (
           <Message key={msg.id} isOwnMessage={msg.isOwnMessage}>
@@ -575,15 +638,37 @@ const ChatPage: React.FC = () => {
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+<<<<<<< HEAD
         />
         <IconButton onClick={isRecording ? stopRecording : startRecording}>
           {isRecording ? <StopIcon /> : <MicIcon />}
         </IconButton>
+=======
+        />{" "}
+        <RecordButton
+          $isRecording={isRecording}
+          onClick={isRecording ? stopRecording : startRecording}
+        >
+          {isRecording ? <StopIcon /> : <MicIcon />}
+        </RecordButton>
+>>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
         <SendButton onClick={handleSendMessage}>
           <SendIcon />
         </SendButton>
       </InputContainer>
+<<<<<<< HEAD
 
+=======
+      {imagePreviewUrl && (
+        <div style={{ margin: "8px 0" }}>
+          <img
+            src={imagePreviewUrl}
+            alt="Preview"
+            style={{ maxWidth: "100%", borderRadius: "8px" }}
+          />
+        </div>
+      )}
+>>>>>>> d57bcc5 (Fix: ProtectRoute usage for public routes and improve redirection logic)
       {/* Display recorded audio before sending */}
       {audioURL && <AudioPlayer controls src={audioURL} />}
     </Container>
