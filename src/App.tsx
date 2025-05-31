@@ -5,6 +5,7 @@ import GlobalStyles from "./Styles/GlobalStyle";
 import { ThemeProvider } from "./context/ThemeContext";
 import { UserProvider } from "./context/UserContext";
 import ProtectRoute from "./pages/ProtectRoute";
+import PublicRoute from "./pages/PublicRoutes";
 import FullPageSpinner from "./ui/FullPageSpinner";
 
 // Lazy load components
@@ -34,9 +35,9 @@ function App() {
                 path="/"
                 index
                 element={
-                  <ProtectRoute>
+                  <PublicRoute>
                     <GetStarted />
-                  </ProtectRoute>
+                  </PublicRoute>
                 }
               />
               <Route path="/login" element={<Login />} />
