@@ -221,6 +221,9 @@ const ChatPage: React.FC = () => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioURL, setAudioURL] = useState<string>("");
 
+  // Track if window/tab is focused
+  const [isWindowFocused, setIsWindowFocused] = useState(true);
+
   // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -286,132 +289,126 @@ const ChatPage: React.FC = () => {
     createOrGetChat();
   }, [chatid, userCred]);
 
-  // Real-time listener for messages
+  // Request notification permission on mount
   useEffect(() => {
-    if (!chatid || !userCred?.uid) return;
+    if ("Notification" in window && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Real-time listener for messages with notification on new message
+  const prevMessagesRef = useRef<Message[]>([]);
+
+  useEffect(() => {
+    if (!userCred?.uid || !chatid) return;
 
     const chatMembers = [userCred.uid, chatid].sort();
     const uniqueChatId = chatMembers.join("_");
 
-    const messagesCollectionRef = collection(
-      db,
-      "chatMessage",
-      uniqueChatId,
-      "messages"
+    const messagesCollection = collection(db, "chat", uniqueChatId, "messages");
+    const messagesQuery = query(
+      messagesCollection,
+      orderBy("timestamp", "asc")
     );
-    const q = query(messagesCollectionRef, orderBy("timestamp", "asc"));
 
-    const unsubscribe = onSnapshot(
-      q,
-      (querySnapshot) => {
-        const messagesData: Message[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          messagesData.push({
-            id: doc.id,
-            text: data.text || "",
-            imageUrl: data.imageUrl || "",
-            audioUrl: data.audioUrl || "",
-            time: data.timestamp
-              ? new Date(data.timestamp.seconds * 1000).toLocaleTimeString()
-              : "",
-            isOwnMessage: data.sender === userCred.uid,
-          });
+    const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
+      const newMessages: Message[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        newMessages.push({
+          id: doc.id,
+          text: data.text,
+          imageUrl: data.imageUrl,
+          audioUrl: data.audioUrl,
+          time: data.time,
+          isOwnMessage: data.sender === userCred.uid,
         });
-        setMessages(messagesData);
-        scrollToBottom();
-      },
-      (error) => {
-        console.error("Error fetching messages:", error);
+      });
+
+      setMessages(newMessages);
+
+      // Notification on new message if window/tab is NOT focused
+      if (
+        newMessages.length > prevMessagesRef.current.length &&
+        !isWindowFocused
+      ) {
+        const newMsg = newMessages[newMessages.length - 1];
+
+        if (!newMsg.isOwnMessage && Notification.permission === "granted") {
+          new Notification(`New message from ${user?.fullName || "User"}`, {
+            body: newMsg.text || "Sent an image/audio",
+          });
+        }
       }
-    );
+
+      prevMessagesRef.current = newMessages;
+    });
 
     return () => unsubscribe();
-  }, [chatid, userCred]);
+  }, [chatid, userCred, user, isWindowFocused]);
 
-  // Handle image upload and preview
-  const handleImageUploadAndPreview = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ): Promise<string | null> => {
-    const file = event.target.files?.[0];
-    if (!file) return null;
+  // Window focus/blur handlers
+  useEffect(() => {
+    const handleFocus = () => setIsWindowFocused(true);
+    const handleBlur = () => setIsWindowFocused(false);
 
-    setSelectedImage(file);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreviewUrl(reader.result as string);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
     };
-    reader.readAsDataURL(file);
+  }, []);
 
-    try {
-      const storage = getStorage();
-      const timestamp = Date.now();
-      const storageRef = ref(storage, `images/${file.name}-${timestamp}`);
+  // Scroll to bottom when messages update
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
-      const snapshot = await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(snapshot.ref);
-      return url;
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      return null;
-    }
-  };
+  // Handle sending message
+  const sendMessage = async () => {
+    if (!userCred?.uid || !chatid) return;
 
-  // Send message
-  const handleSendMessage = async () => {
     if (!newMessage.trim() && !selectedImage && !audioBlob) return;
-
-    if (!userCred?.uid || !chatid) {
-      alert("User not authenticated or chat id missing.");
-      return;
-    }
 
     const chatMembers = [userCred.uid, chatid].sort();
     const uniqueChatId = chatMembers.join("_");
+    const messagesCollection = collection(db, "chat", uniqueChatId, "messages");
 
-    let imageUrl = "";
-    if (selectedImage) {
-      // If image preview url exists, we already uploaded the image so can use it
-      if (imagePreviewUrl) {
-        imageUrl = imagePreviewUrl;
-      } else {
-        const uploadedUrl = await handleImageUploadAndPreview({
-          target: { files: [selectedImage] },
-        } as unknown as React.ChangeEvent<HTMLInputElement>);
-        if (uploadedUrl) imageUrl = uploadedUrl;
-      }
-    }
-
-    let audioUrl = "";
-    if (audioBlob) {
-      try {
-        const storage = getStorage();
-        const timestamp = Date.now();
-        const audioRef = ref(
-          storage,
-          `audio/${userCred.uid}-${timestamp}.webm`
-        );
-
-        const snapshot = await uploadBytes(audioRef, audioBlob);
-        audioUrl = await getDownloadURL(snapshot.ref);
-      } catch (error) {
-        console.error("Error uploading audio:", error);
-      }
-    }
+    let imageUrl: string | undefined;
+    let audioUrl: string | undefined;
 
     try {
-      const messagesCollectionRef = collection(
-        db,
-        "chatMessage",
-        uniqueChatId,
-        "messages"
-      );
-      await addDoc(messagesCollectionRef, {
+      // Upload image if selected
+      if (selectedImage) {
+        const storage = getStorage();
+        const imageRef = ref(
+          storage,
+          `chat_images/${uniqueChatId}/${Date.now()}_${selectedImage.name}`
+        );
+        await uploadBytes(imageRef, selectedImage);
+        imageUrl = await getDownloadURL(imageRef);
+      }
+
+      // Upload audio if recorded
+      if (audioBlob) {
+        const storage = getStorage();
+        const audioRef = ref(
+          storage,
+          `chat_audio/${uniqueChatId}/${Date.now()}.webm`
+        );
+        await uploadBytes(audioRef, audioBlob);
+        audioUrl = await getDownloadURL(audioRef);
+      }
+
+      await addDoc(messagesCollection, {
         sender: userCred.uid,
-        text: newMessage.trim() || "",
-        imageUrl: imageUrl || "",
-        audioUrl: audioUrl || "",
+        text: newMessage,
+        imageUrl: imageUrl || null,
+        audioUrl: audioUrl || null,
+        time: new Date().toLocaleTimeString(),
         timestamp: serverTimestamp(),
       });
 
@@ -425,44 +422,52 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  // Handle text input change
+  // Handle message input change
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(event.target.value);
   };
 
-  // Handle Delete Message
+  // Handle Enter key press in input
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      sendMessage();
+    }
+  };
+
+  // Handle image selection
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      setSelectedImage(file);
+      setImagePreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  // Delete message (only own messages)
   const handleDeleteMessage = async (id: string) => {
-    if (!chatid || !userCred?.uid) return;
-
-    const chatMembers = [userCred.uid, chatid].sort();
+    const chatMembers = [userCred?.uid, chatid].sort();
     const uniqueChatId = chatMembers.join("_");
-
     try {
-      const messageDocRef = doc(
-        db,
-        "chatMessage",
-        uniqueChatId,
-        "messages",
-        id
-      );
-      await deleteDoc(messageDocRef);
+      await deleteDoc(doc(db, "chat", uniqueChatId, "messages", id));
     } catch (error) {
       console.error("Error deleting message:", error);
     }
   };
 
-  // Audio Recording Handlers
-  const handleStartRecording = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("Audio recording is not supported on this browser.");
+  // Audio recording handlers
+  useEffect(() => {
+    if (!isRecording) {
+      if (mediaRecorder) {
+        mediaRecorder.stop();
+      }
       return;
     }
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const handleSuccess = (stream: MediaStream) => {
       const recorder = new MediaRecorder(stream);
-      let chunks: Blob[] = [];
+      setMediaRecorder(recorder);
 
+      const chunks: BlobPart[] = [];
       recorder.ondataavailable = (e) => {
         chunks.push(e.data);
       };
@@ -470,44 +475,71 @@ const ChatPage: React.FC = () => {
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: "audio/webm" });
         setAudioBlob(blob);
-        const url = URL.createObjectURL(blob);
-        setAudioURL(url);
-        chunks = [];
+        setAudioURL(URL.createObjectURL(blob));
       };
 
       recorder.start();
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Error starting audio recording:", error);
-    }
-  };
+    };
 
-  const handleStopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      mediaRecorder.stop();
-      setIsRecording(false);
-    }
-  };
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then(handleSuccess)
+      .catch((err) => {
+        console.error("Could not start audio recording", err);
+        setIsRecording(false);
+      });
 
-  // Navigate back handler
-  const handleBack = () => {
-    navigate(-1);
-  };
+    return () => {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+    };
+  }, [isRecording]);
+
+  // Render each message
+  const renderMessage = (message: Message) => (
+    <Message
+      key={message.id}
+      isOwnMessage={message.isOwnMessage}
+      title={message.time}
+    >
+      <MessageBubble isOwnMessage={message.isOwnMessage}>
+        {message.text && <div>{message.text}</div>}
+
+        {message.imageUrl && (
+          <ImagePreview src={message.imageUrl} alt="Sent Image" />
+        )}
+
+        {message.audioUrl && <AudioPlayer controls src={message.audioUrl} />}
+
+        {message.isOwnMessage && (
+          <DeleteButton
+            aria-label="delete"
+            onClick={() => handleDeleteMessage(message.id)}
+            size="small"
+          >
+            <DeleteIcon fontSize="small" />
+          </DeleteButton>
+        )}
+
+        <TimeStamp isOwnMessage={message.isOwnMessage}>
+          {message.time}
+        </TimeStamp>
+      </MessageBubble>
+    </Message>
+  );
 
   return (
     <Container>
       <Header>
-        <Tooltip title="Back">
-          <IconButton onClick={handleBack}>
+        <UserInfo>
+          <IconButton onClick={() => navigate(-1)}>
             <ArrowBackIosNewIcon />
           </IconButton>
-        </Tooltip>
-        <UserInfo>
-          <Avatar alt={user?.fullName || ""} src={user?.photoUrl || ""} />
+          <Avatar src={user?.photoUrl || ""} alt={user?.fullName || "User"} />
           <UserDetails>
-            <UserName>{user?.fullName || "Unknown User"}</UserName>
-            <UserStatus>Online</UserStatus>
+            <UserName>{user?.fullName || "Unknown"}</UserName>
+            <UserStatus> "Offline"</UserStatus>
           </UserDetails>
         </UserInfo>
         <ActionIcons>
@@ -525,77 +557,53 @@ const ChatPage: React.FC = () => {
       </Header>
 
       <MessagesContainer>
-        {messages.map(
-          ({ id, text, imageUrl, audioUrl, time, isOwnMessage }) => (
-            <Message key={id} isOwnMessage={isOwnMessage}>
-              <MessageBubble isOwnMessage={isOwnMessage}>
-                {text && <div>{text}</div>}
-                {imageUrl && <ImagePreview src={imageUrl} alt="Sent image" />}
-                {audioUrl && <AudioPlayer controls src={audioUrl} />}
-                <TimeStamp isOwnMessage={isOwnMessage}>{time}</TimeStamp>
-
-                {isOwnMessage && (
-                  <DeleteButton
-                    aria-label="delete"
-                    size="small"
-                    onClick={() => handleDeleteMessage(id)}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </DeleteButton>
-                )}
-              </MessageBubble>
-            </Message>
-          )
-        )}
+        {messages.map(renderMessage)}
         <div ref={messagesEndRef} />
       </MessagesContainer>
 
       <InputContainer>
-        <IconButton
-          component="label"
-          title="Attach Image"
-          sx={{ color: "var(--color-blue)" }}
-        >
-          <ImageIcon />
-          <input
-            hidden
-            type="file"
-            accept="image/*"
-            onChange={handleImageUploadAndPreview}
-          />
-        </IconButton>
-
-        {imagePreviewUrl && (
-          <ImagePreview src={imagePreviewUrl} alt="Preview" />
-        )}
-
-        <InputField
-          type="text"
-          placeholder="Type your message..."
-          value={newMessage}
-          onChange={handleInputChange}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleSendMessage();
-            }
-          }}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          style={{ display: "none" }}
+          id="upload-image"
         />
+        <label htmlFor="upload-image">
+          <IconButton component="span" color="primary" size="large">
+            <ImageIcon />
+          </IconButton>
+        </label>
 
         <RecordButton
           $isRecording={isRecording}
-          onClick={isRecording ? handleStopRecording : handleStartRecording}
-          title={isRecording ? "Stop Recording" : "Record Audio"}
+          onClick={() => setIsRecording((prev) => !prev)}
+          aria-label={isRecording ? "Stop recording" : "Record audio"}
+          size="large"
         >
           {isRecording ? <StopIcon /> : <MicIcon />}
         </RecordButton>
 
-        <SendButton aria-label="send" onClick={handleSendMessage}>
+        <InputField
+          type="text"
+          placeholder="Type a message"
+          value={newMessage}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+        />
+
+        <SendButton
+          onClick={sendMessage}
+          size="large"
+          aria-label="Send message"
+        >
           <SendIcon />
         </SendButton>
       </InputContainer>
 
       {audioURL && <AudioPlayer controls src={audioURL} />}
+
+      {imagePreviewUrl && <ImagePreview src={imagePreviewUrl} alt="Preview" />}
     </Container>
   );
 };
